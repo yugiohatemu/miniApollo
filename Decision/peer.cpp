@@ -18,12 +18,13 @@
 Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,DataPool * data_pool):
     pid(pid), peer_list(peer_list),data_pool(data_pool),
     work(io_service), strand(io_service),
-    t_broadcast(io_service, boost::posix_time::seconds(3)),
-    t_new_feed(io_service, boost::posix_time::seconds(3)),
+    t_broadcast(io_service, boost::posix_time::seconds(0)),
+    t_new_feed(io_service, boost::posix_time::seconds(0)),
     t_on_off_line(io_service, boost::posix_time::seconds(15)),
     t_bully_other(io_service, boost::posix_time::seconds(0)),
     t_being_bully(io_service, boost::posix_time::seconds(0)),
-    t_miscellaneous(io_service, boost::posix_time::seconds(0))
+    t_miscellaneous(io_service, boost::posix_time::seconds(0)),
+    t_try_bb(io_service, boost::posix_time::seconds(0))
 {
         //Init timers for that
     availability =  (float)(rand() % 10 + 1) / 10;
@@ -50,6 +51,53 @@ Peer::~Peer(){
     delete bb_synchronizer;
     Log::log().Print("Peer # %d deleted with packed bb # %d\n",pid, bb_count);
    
+}
+
+void Peer::cancel_all(){
+    online = false;
+    
+    t_bully_other.cancel();
+    t_being_bully.cancel();
+    
+    t_broadcast.cancel();
+    t_new_feed.cancel();
+    
+    t_miscellaneous.cancel();
+    t_try_bb.cancel();
+    
+    state = NOTHING;
+}
+
+void Peer::get_offline(){
+    cancel_all();
+    
+    Log::log().Print("Peer # %d get offline\n",pid);
+    
+    t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 20 *(1-availability) + rand() % 10));
+    t_on_off_line.async_wait(strand.wrap(boost::bind(&Peer::get_online,this)));
+}
+
+void Peer::get_online(){
+    online = true;
+    state = NOTHING;
+    
+    t_new_feed.expires_from_now(boost::posix_time::seconds(rand() % 6 + 2));
+    t_new_feed.async_wait(strand.wrap(boost::bind(&Peer::new_feed,this)));
+    
+    t_broadcast.expires_from_now(boost::posix_time::seconds(5));
+    t_broadcast.async_wait(strand.wrap(boost::bind(&Peer::broadcast,this)));
+    
+    t_try_bb.expires_from_now(boost::posix_time::seconds(15));
+    
+    io_service.post(strand.wrap(boost::bind(&Peer::finish_bully,this, error)));
+    
+    //    io_service.post(boost::bind(&Peer::new_feed, this));
+    //    io_service.post(boost::bind(strand.wrap(&Peer::broadcast, this)));
+    
+    Log::log().Print("Peer # %d get online\n",pid);
+    
+    t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 20 * availability + rand() % 5));
+    t_on_off_line.async_wait(boost::bind(&Peer::get_offline,this));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,14 +169,6 @@ void Peer::new_feed(){
     t_new_feed.expires_from_now(boost::posix_time::seconds(rand() % 6 + 2));
     t_new_feed.async_wait(strand.wrap(boost::bind(&Peer::new_feed,this)));
     
-    
-    //test bully process
-    //15 is back bundle size
-    //technically we should seperate it and use a timer for that...it could be check like every 20 secs
-    if (synchronizer.size() > BB_SIZE && state == NOTHING ) {
-        state = BULLY_OTHER;
-        io_service.post(strand.wrap(boost::bind(&Peer::start_bully, this, error)));
-    }
 }
 
 void Peer::read_feed(){
@@ -148,40 +188,29 @@ void Peer::read_feed(){
     
 }
 
-
-void Peer::cancel_all(){
-    online = false;
-    t_bully_other.cancel();
-    t_being_bully.cancel();
-    t_broadcast.cancel();
-    t_new_feed.cancel();
-    t_miscellaneous.cancel();
-    state = NOTHING;
-}
-
-void Peer::get_offline(){
-    cancel_all();
-   
-    Log::log().Print("Peer # %d get offline\n",pid);
+void Peer::try_bb(const boost::system::error_code &e){
+    if(e == boost::asio::error::operation_aborted || !online ){
+        Log::log().Print("Peer # %d cancel try_bb\n",pid);
+        return ;
+    }
     
-    t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 20 *(1-availability) + rand() % 10));
-    t_on_off_line.async_wait(boost::bind(&Peer::get_online,this));
+    if (bb_synchronizer->is_empty() || bb_synchronizer->is_BB_synced()) {
+        t_try_bb.expires_from_now(boost::posix_time::seconds(15));
+        t_try_bb.async_wait(strand.wrap(boost::bind(&Peer::finish_bully,this, boost::asio::placeholders::error)));
+    }else{
+        
+        if (synchronizer.size() > BB_SIZE && state == NOTHING ) {
+            state = BULLY_OTHER;
+            io_service.post(strand.wrap(boost::bind(&Peer::start_bully, this, error)));
+        }else{
+            //frsit, try to create a header cotent based on unfinished header
+            
+            //then compare it
+            
+            //if equal, pack_bb
+        }
+    }
 }
-
-void Peer::get_online(){
-    online = true;
-    state = NOTHING;
-    io_service.post(boost::bind(&Peer::new_feed, this));
-    io_service.post(boost::bind(&Peer::broadcast, this));
-    
-    Log::log().Print("Peer # %d get online\n",pid);
-    
-    t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 20 * availability + rand() % 5));
-    t_on_off_line.async_wait(boost::bind(&Peer::get_offline,this));
-}
-
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark - Bully algorithm
 void Peer::start_bully(const boost::system::error_code &e){

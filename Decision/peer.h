@@ -72,6 +72,8 @@ private:
     boost::asio::deadline_timer t_bully_other;
     boost::asio::deadline_timer t_being_bully;
     
+    boost::asio::deadline_timer t_try_bb;
+    
     boost::mutex sync_lock;
     
     void cancel_all();
@@ -89,9 +91,8 @@ private:
     
     void get_header(BackBundle::Header header); //copy Header from BB, or just the actual BB now
     void broadcast_header();
-    //reply whether they are synced
-    /*eg*/
-    bool header_synced;
+    
+    void try_bb(const boost::system::error_code &e);
 };
 
 #endif /* defined(__Decision__peer__) */
