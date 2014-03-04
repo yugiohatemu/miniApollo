@@ -34,13 +34,23 @@ public:
     ~Peer();
     
     void get_bullyed(Message m);
-//    void pack_bb(const boost::system::error_code &e);
+
     Synchronizer * synchronizer;
+    BB_Synchronizer * bb_synchronizer;
     boost::asio::io_service io_service;
     boost::system::error_code error;
-private:
     
-//    BB_Synchronizer * bb_synchronizer;
+    std::vector<uint64_t>& get_ts_list();
+    template <typename TFunc>
+    void enqueue(TFunc fun){
+        io_service.post(boost::bind( &Peer::execute<TFunc>, this, fun ));
+    }
+private:
+    template <typename TFunc>
+    void execute(TFunc fun){
+        if(online) fun();
+    }
+    
    
     std::vector<Peer *> &peer_list;
     DataPool * data_pool;
@@ -58,7 +68,6 @@ private:
     boost::asio::deadline_timer t_bully_other;
     boost::asio::deadline_timer t_being_bully;
     
-//    boost::asio::deadline_timer t_sync_BB;
     
     boost::mutex sync_lock;
     

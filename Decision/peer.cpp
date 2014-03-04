@@ -29,8 +29,9 @@ Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,DataPool * data_pool)
         //Init timers for that
     availability =  (float)(rand() % 10 + 1) / 10;
     bb_count = 0;
-//    bb_synchronizer = new BB_Synchronizer();
+
     synchronizer = new Synchronizer(io_service,strand,pid, peer_list);
+    bb_synchronizer = new BB_Synchronizer(io_service,strand,pid, peer_list);
     
     for (unsigned int i = 0; i < 3; i++) {
         thread_group.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
@@ -255,53 +256,3 @@ void Peer::get_header(BackBundle::Header header){
     //try syncing
 }
 
-
-///////////////////////////////////////////////////
-//Going to be removed
-//void Peer::pack_bb(const boost::system::error_code &e){
-//    if (e == boost::asio::error::operation_aborted || !online){
-//        Log::log().Print("Peer # %d cancel pack BB\n",pid);
-//        return ;
-//    }
-//    
-//    boost::this_thread::sleep(boost::posix_time::seconds(1));
-//    
-//    t_being_bully.cancel();
-//    t_bully_other.cancel();
-//    t_miscellaneous.cancel();
-//    
-//    {
-//        boost::mutex::scoped_lock scoped_lock(sync_lock);
-//        
-//        //Tehcnically, we should use a bundle header here or something
-//        if (synchronizer.size() < BB_SIZE || state == DELAY) {
-//            Log::log().Print("Peer # %d not synced for BB pack\n",pid);
-//
-//            //delayed until  being synced
-//            state = DELAY;
-//            
-//            t_miscellaneous.expires_from_now(boost::posix_time::seconds(5));
-//            t_miscellaneous.async_wait(boost::bind(&Peer::pack_bb, this, boost::asio::placeholders::error));
-//            
-//        }else{
-//            Log::log().Print("Peer # %d pack bb %d\n",pid,bb_count);
-//            bb_count++;
-//            //create BB
-//            bb_synchronizer->add_BB( new BackBundle(synchronizer, BB_SIZE));
-//            bb_synchronizer->try_pack_BB(synchronizer);
-//            //ask the BB region to sync up itself instead of erasing here
-//            
-//            synchronizer.erase(synchronizer.begin(), synchronizer.begin() + BB_SIZE); //do a more careful removal later
-//            //also, cleans the cache
-//            
-//            state = NOTHING;
-//            
-//            io_service.post(strand.wrap(boost::bind(&Peer::broadcast_header, this)));
-//            
-//            //try pack back bundle here
-//            
-//            
-//        }
-//    }
-//}
-//
