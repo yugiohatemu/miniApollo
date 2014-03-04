@@ -21,15 +21,15 @@ BackBundle::BackBundle(Header &h):header(h), size(h.size),bb_empty(true){
 
 void BackBundle::set(std::vector<uint64_t> & sync, unsigned int size){
     
-    std::copy(sync.begin(), sync.begin() + size, ts_list);
+//    std::copy(sync.begin(), sync.begin() + size, ts_list);
    
     bb_empty = false;
 }
 
 void BackBundle::set(std::vector<uint64_t> & sync, unsigned int low, unsigned int high){
     
-    std::copy(sync.begin()+low, sync.begin() + high, ts_list);
-    std::sort(ts_list.begin(), ts_list.end());
+//    std::copy(sync.begin()+low, sync.begin() + high, ts_list);
+//    std::sort(ts_list.begin(), ts_list.end());
     bb_empty = false;
     bb_synced = (high - low + 1 == size);
 }

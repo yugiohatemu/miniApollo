@@ -15,19 +15,32 @@
 #include <inttypes.h>
 #include <vector>
 
+class Peer;
+
 class Synchronizer{
+    unsigned int pid;
+    
     boost::system::error_code error;
     boost::asio::io_service &io_service;
     boost::asio::io_service::strand &strand;
     
-    boost::asio::deadline_timer t_sync;
-    std::vector<uint64_t> list;
+    boost::asio::deadline_timer t_broadcast;
     
+    std::vector<uint64_t> ts_list;
+    std::vector<Peer *> &peer_list;
+    
+    boost::mutex mutex;
+    void sync(std::vector<uint64_t> &other_list);
+    void broadcast(boost::system::error_code );
 public:
-    Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand);
+    Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list);
     ~Synchronizer();
-    
-    //emmmmmmmm..................how to broadcast sync?
+   
+    void stop();
+    void start();
+    unsigned int size();
+    void add_ts(uint64_t ts);
+   
 };
 
 #endif /* defined(__Decision__synchronizer__) */

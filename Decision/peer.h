@@ -9,15 +9,10 @@
 #ifndef __Decision__peer__
 #define __Decision__peer__
 
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
-#include <boost/thread/mutex.hpp>
-#include <inttypes.h>
-#include <vector>
-
 #include "backBundle.h"
 #include "dataPool.h"
 #include "bbSynchronizer.h"
+#include "synchronizer.h"
 
 class Peer{
     struct Message{
@@ -38,17 +33,14 @@ public:
     Peer(unsigned int pid,std::vector<Peer *> &peer_list, DataPool * data_pool);
     ~Peer();
     
-//    void init(std::vector<Peer *> &peer_list);
-    void sync(std::vector<uint64_t> &synchronizer);
-    
     void get_bullyed(Message m);
-    void pack_bb(const boost::system::error_code &e);
-    
+//    void pack_bb(const boost::system::error_code &e);
+    Synchronizer * synchronizer;
     boost::asio::io_service io_service;
     boost::system::error_code error;
 private:
-    std::vector<uint64_t> synchronizer;
-    BB_Synchronizer * bb_synchronizer;
+    
+//    BB_Synchronizer * bb_synchronizer;
    
     std::vector<Peer *> &peer_list;
     DataPool * data_pool;
@@ -56,26 +48,22 @@ private:
     
     unsigned int BB_SIZE = 15;
     
-    
     boost::asio::io_service::work work;
 	boost::asio::io_service::strand strand;
     boost::thread_group thread_group;
     
-    boost::asio::deadline_timer t_broadcast;
     boost::asio::deadline_timer t_new_feed;
     boost::asio::deadline_timer t_on_off_line;
-    boost::asio::deadline_timer t_miscellaneous;
     
     boost::asio::deadline_timer t_bully_other;
     boost::asio::deadline_timer t_being_bully;
     
-    boost::asio::deadline_timer t_sync_BB;
+//    boost::asio::deadline_timer t_sync_BB;
     
     boost::mutex sync_lock;
     
     void cancel_all();
     
-    void broadcast();
     void new_feed();
     void read_feed();
     
