@@ -12,6 +12,7 @@
 		3B407F8518C1366D00BA462F /* dataPool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B407F8318C1366D00BA462F /* dataPool.cpp */; };
 		3B471AB218C4FC12000AB6D5 /* log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B471AB018C4FC12000AB6D5 /* log.cpp */; };
 		3B471AB518C51BF6000AB6D5 /* bbSynchronizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B471AB318C51BF6000AB6D5 /* bbSynchronizer.cpp */; };
+		3B662CD618C6406B0087EAD5 /* synchronizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B662CD418C6406B0087EAD5 /* synchronizer.cpp */; };
 		3B9DD29E18BCF709003EA4B9 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B9DD29D18BCF709003EA4B9 /* main.cpp */; };
 		3B9DD2A018BCF709003EA4B9 /* Decision.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 3B9DD29F18BCF709003EA4B9 /* Decision.1 */; };
 		3B9DD2A718BCF72D003EA4B9 /* boost.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B9DD2A618BCF72D003EA4B9 /* boost.framework */; };
@@ -41,6 +42,8 @@
 		3B471AB118C4FC12000AB6D5 /* log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log.h; sourceTree = "<group>"; };
 		3B471AB318C51BF6000AB6D5 /* bbSynchronizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bbSynchronizer.cpp; sourceTree = "<group>"; };
 		3B471AB418C51BF6000AB6D5 /* bbSynchronizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bbSynchronizer.h; sourceTree = "<group>"; };
+		3B662CD418C6406B0087EAD5 /* synchronizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = synchronizer.cpp; sourceTree = "<group>"; };
+		3B662CD518C6406B0087EAD5 /* synchronizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = synchronizer.h; sourceTree = "<group>"; };
 		3B9DD29A18BCF709003EA4B9 /* Decision */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Decision; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B9DD29D18BCF709003EA4B9 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		3B9DD29F18BCF709003EA4B9 /* Decision.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = Decision.1; sourceTree = "<group>"; };
@@ -88,6 +91,8 @@
 				3B407F8018C12F3800BA462F /* backBundle.cpp */,
 				3B471AB318C51BF6000AB6D5 /* bbSynchronizer.cpp */,
 				3B471AB418C51BF6000AB6D5 /* bbSynchronizer.h */,
+				3B662CD418C6406B0087EAD5 /* synchronizer.cpp */,
+				3B662CD518C6406B0087EAD5 /* synchronizer.h */,
 				3B471AB018C4FC12000AB6D5 /* log.cpp */,
 				3B471AB118C4FC12000AB6D5 /* log.h */,
 				3B9DD29F18BCF709003EA4B9 /* Decision.1 */,
@@ -148,6 +153,7 @@
 			files = (
 				3B9DD29E18BCF709003EA4B9 /* main.cpp in Sources */,
 				3B407F8518C1366D00BA462F /* dataPool.cpp in Sources */,
+				3B662CD618C6406B0087EAD5 /* synchronizer.cpp in Sources */,
 				3B2CA1FF18BFA9BA0033B57C /* peer.cpp in Sources */,
 				3B471AB218C4FC12000AB6D5 /* log.cpp in Sources */,
 				3B407F8218C12F3800BA462F /* backBundle.cpp in Sources */,

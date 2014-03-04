@@ -11,28 +11,42 @@
 
 BackBundle::BackBundle(std::vector<uint64_t> & sync, unsigned int size):size(size), header(sync, size){
     set(sync, size);
+    bb_synced = true;
+    
 }
 
-BackBundle::BackBundle(Header &h):header(h){
-    bb_empty = true;
+BackBundle::BackBundle(Header &h):header(h), size(h.size),bb_empty(true){
+    bb_synced = false;
 }
 
 void BackBundle::set(std::vector<uint64_t> & sync, unsigned int size){
-    ts_list = new uint64_t [size];
-    std::copy(sync.begin(), sync.begin() + size, ts_list);
-    std::sort(ts_list, ts_list + size);
     
+    std::copy(sync.begin(), sync.begin() + size, ts_list);
+   
     bb_empty = false;
 }
 
+void BackBundle::set(std::vector<uint64_t> & sync, unsigned int low, unsigned int high){
+    
+    std::copy(sync.begin()+low, sync.begin() + high, ts_list);
+    std::sort(ts_list.begin(), ts_list.end());
+    bb_empty = false;
+    bb_synced = (high - low + 1 == size);
+}
+
 BackBundle::~BackBundle(){
-    if (!bb_empty) delete [] ts_list;
+   
 }
 
 ////////////////////////
 bool BackBundle::search(uint64_t ts){
     if (bb_empty) return false;
-    else return  std::binary_search(ts_list, ts_list+size, ts);
+    else return  std::binary_search(ts_list.begin(), ts_list.end(), ts);
+}
+
+void BackBundle::add_ts(uint64_t ts){
+    ts_list.push_back(ts);
+    std::sort(ts_list.begin(), ts_list.end());
 }
 
 bool BackBundle::operator<(const BackBundle & bb) const{
@@ -45,4 +59,8 @@ BackBundle::Header BackBundle::get_header(){
 
 bool BackBundle::is_bb_empty(){
     return bb_empty;
+}
+
+bool BackBundle::is_bb_synced(){
+    return bb_synced;
 }

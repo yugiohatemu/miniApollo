@@ -31,16 +31,22 @@ public:
     BackBundle(std::vector<uint64_t> & sync, unsigned int size);
     BackBundle(Header &h);
     ~BackBundle();
+    
     void set(std::vector<uint64_t> & sync, unsigned int size);
+    void set(std::vector<uint64_t> & sync, unsigned int low, unsigned int high);
     bool search(uint64_t ts);
+    void add_ts(uint64_t ts);
     bool operator<(const BackBundle & bb) const;
     Header get_header();
     bool is_bb_empty();
+    bool is_bb_synced();
 private:
     Header header;
-    uint64_t * ts_list;
+    
+    std::vector<uint64_t> ts_list;
     unsigned int size;
     bool bb_empty;
+    bool bb_synced;
     
 };
 

@@ -10,7 +10,6 @@
 #define __Decision__peer__
 
 #include <boost/asio.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <inttypes.h>
@@ -50,9 +49,7 @@ public:
 private:
     std::vector<uint64_t> synchronizer;
     BB_Synchronizer * bb_synchronizer;
-    //BB bundles
-    //disk
-    //harddisk
+   
     std::vector<Peer *> &peer_list;
     DataPool * data_pool;
     State state;
@@ -72,7 +69,7 @@ private:
     boost::asio::deadline_timer t_bully_other;
     boost::asio::deadline_timer t_being_bully;
     
-    boost::asio::deadline_timer t_try_bb;
+    boost::asio::deadline_timer t_sync_BB;
     
     boost::mutex sync_lock;
     
@@ -92,7 +89,7 @@ private:
     void get_header(BackBundle::Header header); //copy Header from BB, or just the actual BB now
     void broadcast_header();
     
-    void try_bb(const boost::system::error_code &e);
+    void sync_BB(const boost::system::error_code &e);
 };
 
 #endif /* defined(__Decision__peer__) */

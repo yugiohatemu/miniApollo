@@ -19,12 +19,15 @@ public:
     ~BB_Synchronizer();
     bool is_BB_synced();
     BackBundle::Header get_latest_header();
-    void add_bb(BackBundle * bb);
-    void add_empty_bb_with_header(BackBundle::Header &h);
+    void add_BB(BackBundle * BB);
+    void add_empty_BB_with_header(BackBundle::Header &h);
     
-    bool is_empty();
+    bool is_BB_empty();
     bool is_ts_in_BB(uint64_t ts);
-    bool is_header_in_bb(BackBundle::Header h);
+    bool is_header_in_BB(BackBundle::Header h);
+    
+    void try_pack_BB(std::vector<uint64_t> &sync);
+   
     //BackBundle::Header  get_specific_header
     //BackBundle get_back_bundle_with_header(Header h)
 };
