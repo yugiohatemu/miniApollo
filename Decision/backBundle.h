@@ -20,7 +20,7 @@ public:
         uint64_t from, to;
         Header(std::vector<uint64_t> & sync):size((int)sync.size()),from(sync.front()),to(sync.back()){}
         Header(std::vector<uint64_t> & sync, unsigned int size):size(size), from(sync[0]), to(sync[size-1]){}
-        Header(){}
+        Header():size(0), from(0), to(0){}
         Header(const Header & h):size(h.size), from(h.from), to(h.to){}
         Header& operator=(const Header &h){
             size = h.size; from = h.from; to = h.to;
@@ -37,18 +37,20 @@ public:
     ~BackBundle();
     
     std::vector<uint64_t>& get_list();
-    void set(std::vector<uint64_t> & sync, unsigned int size);
-    void set(std::vector<uint64_t> & sync, unsigned int low, unsigned int high);
+//    void set(std::vector<uint64_t> & sync, unsigned int size);
+//    void set(std::vector<uint64_t> & sync, unsigned int low, unsigned int high);
     bool is_ts_in_bb(uint64_t ts);
     void add_ts(uint64_t ts);
     bool operator<(const BackBundle & bb) const;
-    Header get_header();
+    
+    Header target;
+    Header current;
+    
     bool is_bb_empty();
     bool is_bb_synced();
     void update_sync();
 private:
-    Header target;
-    Header current;
+    
     std::vector<uint64_t> ts_list;
     unsigned int size;
     bool bb_empty;

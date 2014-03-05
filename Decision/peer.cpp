@@ -54,7 +54,7 @@ Peer::~Peer(){
     
     delete synchronizer;
     delete bb_synchronizer;
-    Log::log().Print("Peer # %d deleted with packed bb # %d\n",pid);
+    Log::log().Print("Peer # %d deleted\n",pid);
    
 }
 
@@ -130,7 +130,7 @@ void Peer::read_feed(){
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark - Bully algorithm
 void Peer::start_bully(const boost::system::error_code &e){
-    if (e == boost::asio::error::operation_aborted || !online || state == DELAY) {
+    if (e == boost::asio::error::operation_aborted || !online) {
         Log::log().Print("Peer # %d cancel start bully\n",pid);
         return ;
     }
@@ -187,35 +187,21 @@ void Peer::finish_bully(const boost::system::error_code &e){
     }
     
     boost::mutex::scoped_lock scoped_lock(sync_lock);
+    synchronizer->first_clean_up();
+    //broad cast victory
+    for (unsigned int i = 0; i < peer_list.size(); i++) {
+        peer_list[i]->io_service.post(boost::bind(&Peer::stop_bully, peer_list[i], error));
+    }
 }
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma mark - Backbunlde and Header
-
-//we need a counter, we don't care about time
-//we only broadcast the latest one
-//void Peer::broadcast_header(){
-//    if (!online) return ;
-//    if (bb_synchronizer->is_BB_empty()) return ;
-//    //BroadCast for a certain amount of timer ?
-//    Log::log().Print("Peer # %d broadcast header\n",pid);
-//    
-//    BackBundle::Header header(bb_synchronizer->get_latest_header());
-//    for (unsigned int i = 0; i < peer_list.size(); i++) {
-//        if(i != pid) peer_list[i]->io_service.post(boost::bind(&Peer::get_header,peer_list[i], header));
-//    }
-//}
-
-//broadcast header...if sent
-//void Peer::get_header(BackBundle::Header header){
-//    if (!online) return;
-//    
-//    boost::this_thread::sleep(boost::posix_time::seconds(1));
-//    
-//    if (bb_synchronizer->is_BB_empty() || !bb_synchronizer->is_header_in_BB(header)) {
-//        bb_synchronizer->add_empty_BB_with_header(header);
-//    }
-    //try syncing
-//}
-
+void Peer::stop_bully(const boost::system::error_code &e){
+    if (e == boost::asio::error::operation_aborted || !online) {
+        Log::log().Print("Peer # %d cancel stop bully\n",pid);
+        return ;
+    }
+    
+    t_bully_other.cancel();
+    t_being_bully.cancel();
+    synchronizer->clean_up_done();
+    
+}

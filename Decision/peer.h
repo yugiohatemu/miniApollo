@@ -23,7 +23,6 @@ class Peer{
         NOTHING,
         BULLY_OTHER,
         BEING_BULLIED,
-        DELAY
     };
 public:
     unsigned int pid;
@@ -42,6 +41,7 @@ public:
     void enqueue(TFunc fun){
         io_service.post(boost::bind( &Peer::execute<TFunc>, this, fun ));
     }
+    void start_bully(const boost::system::error_code &e);
 private:
     template <typename TFunc>
     void execute(TFunc fun){
@@ -52,8 +52,6 @@ private:
     std::vector<Peer *> &peer_list;
     DataPool * data_pool;
     State state;
-    
-    unsigned int BB_SIZE = 15;
     
     boost::asio::io_service::work work;
 	boost::asio::io_service::strand strand;
@@ -77,8 +75,9 @@ private:
     void get_offline();
     bool online;
     
-    void start_bully(const boost::system::error_code &e);
+    
     void finish_bully(const boost::system::error_code &e);
+    void stop_bully(const boost::system::error_code &e);
 };
 
 #endif /* defined(__Decision__peer__) */

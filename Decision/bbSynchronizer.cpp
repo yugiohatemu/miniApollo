@@ -52,7 +52,7 @@ void BB_Synchronizer::broadcast(boost::system::error_code error){
         for (unsigned int i = 0; i < peer_list.size(); i++) {
             Message m;
             m.pid = pid;
-            m.h = bb_list.back()->get_header();
+            m.h = bb_list.back()->current;
             if (i != pid) peer_list[i]->io_service.post(boost::bind(&BB_Synchronizer::sync, peer_list[i]->bb_synchronizer, m));
         }
     }
@@ -64,11 +64,17 @@ void BB_Synchronizer::broadcast(boost::system::error_code error){
 
 void BB_Synchronizer::sync(Message m){
     //if header of the latest BB is the same, the we stop
-    BackBundle::Header latest = bb_list.back()->get_header();
-    if (latest != m.h) {
-        //TODO: use enqueue
-        io_service.post(strand.wrap(boost::bind(&BB_Synchronizer::sync_bb ,this, m.pid)));
+    //we don't have that header, then add it
+    //TODO:
+    
+    
+    if (bb_list.empty() || bb_list.back()->target != m.h) {
+        bb_list.push_back(new BackBundle(m.h));
+    }else if(bb_list.back()->current == m.h){
+        return;
     }
+    
+    io_service.post(strand.wrap(boost::bind(&BB_Synchronizer::sync_bb ,this, m.pid)));
 }
 
 void BB_Synchronizer::sync_bb(unsigned int p){

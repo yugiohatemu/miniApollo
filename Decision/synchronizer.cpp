@@ -15,12 +15,15 @@
 #include "sync_c.h"
 #include "bbSynchronizer.h"
 
+const int BB_SIZE = 15;
+
 Synchronizer::Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list):
     io_service(io_service),
     strand(strand),
     peer_list(peer_list),
     pid(pid),
-    t_broadcast(io_service, boost::posix_time::seconds(0))
+    t_broadcast(io_service, boost::posix_time::seconds(0)),
+    t_clean_up(io_service, boost::posix_time::seconds(0))
 {
     bb_synchronizer = NULL;
 }
@@ -32,12 +35,21 @@ Synchronizer::~Synchronizer(){
 }
 
 void Synchronizer::stop(){
+    t_clean_up.cancel();
     t_broadcast.cancel();
+    
+    BB_started = false;
 }
 
 void Synchronizer::start(){
     t_broadcast.expires_from_now(boost::posix_time::seconds(5));
     t_broadcast.async_wait(strand.wrap(boost::bind(&Synchronizer::broadcast,this, boost::asio::placeholders::error)));
+    
+    t_clean_up.expires_from_now(boost::posix_time::seconds(7));
+    t_clean_up.async_wait(strand.wrap(boost::bind(&Synchronizer::clean_up,this, boost::asio::placeholders::error)));
+    
+    BB_started = false;
+    
 }
 
 unsigned int Synchronizer::size(){
@@ -55,7 +67,8 @@ void Synchronizer::set_ts_list(std::vector<uint64_t> &list){
 std::vector<uint64_t> & Synchronizer::get_ts_list(){
     return ts_list;
 }
-
+///////////////////
+#pragma mark - timer functionality
 void Synchronizer::broadcast(boost::system::error_code error){
     if(error == boost::asio::error::operation_aborted ) return;
     
@@ -92,4 +105,38 @@ void Synchronizer::sync(std::vector<uint64_t> &other_list){
     
     if (!diff.empty()) sync_c(ts_list,diff);
     //TODO: we can do a more careful analysis here, even ask it to BB to sync faster
+}
+
+
+void Synchronizer::clean_up(boost::system::error_code e){
+    if(e == boost::asio::error::operation_aborted ) return;
+    
+    boost::mutex::scoped_lock lock(mutex);
+    if (ts_list.size() > BB_SIZE && !BB_started) {
+        BB_started = true;
+        peer_list[pid]->io_service.post(strand.wrap(boost::bind(&Peer::start_bully, peer_list[pid], error)));
+    }else{
+        t_clean_up.expires_from_now(boost::posix_time::seconds(7));
+        t_clean_up.async_wait(strand.wrap(boost::bind(&Synchronizer::clean_up,this, boost::asio::placeholders::error)));
+    }
+}
+
+void Synchronizer::first_clean_up(){
+    //create our BB bundle
+    boost::mutex::scoped_lock lock(mutex);
+    BackBundle * bb = new BackBundle(ts_list, BB_SIZE);
+    bb_synchronizer->add_BB(bb);
+    BB_started = false;
+    
+    t_clean_up.expires_from_now(boost::posix_time::seconds(10));
+    t_clean_up.async_wait(strand.wrap(boost::bind(&Synchronizer::clean_up,this, boost::asio::placeholders::error)));
+
+}
+
+void Synchronizer::clean_up_done(){
+    BB_started = false;
+    //maybe should cancel once first?
+    t_clean_up.cancel();
+    t_clean_up.expires_from_now(boost::posix_time::seconds(10));
+    t_clean_up.async_wait(strand.wrap(boost::bind(&Synchronizer::clean_up,this, boost::asio::placeholders::error)));
 }

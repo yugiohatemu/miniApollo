@@ -27,6 +27,7 @@ class Synchronizer{
     boost::asio::io_service::strand &strand;
     
     boost::asio::deadline_timer t_broadcast;
+    boost::asio::deadline_timer t_clean_up;
     
     std::vector<uint64_t> ts_list;
     std::vector<Peer *> &peer_list;
@@ -35,6 +36,7 @@ class Synchronizer{
     void sync(std::vector<uint64_t> &other_list);
     void broadcast(boost::system::error_code );
     
+    bool BB_started;
 public:
     Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list);
     ~Synchronizer();
@@ -47,6 +49,10 @@ public:
     void add_ts(uint64_t ts);
     void set_ts_list(std::vector<uint64_t> &list);
     std::vector<uint64_t> & get_ts_list();
+    
+    void clean_up(boost::system::error_code error);
+    void first_clean_up();
+    void clean_up_done();
     
 };
 
