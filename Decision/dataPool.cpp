@@ -16,6 +16,9 @@ DataPool::DataPool(){
 
 DataPool::~DataPool(){
     Log::log().Print("Total feed # %d\n", ts_list.size());
+//    for (unsigned int i = 0; i < ts_list.size(); i++) {
+//         Log::log().Print("%d - %lld\n",i, ts_list[i]);
+//    }
 }
 
 uint64_t DataPool::get_random_ts(){

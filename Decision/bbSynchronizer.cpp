@@ -48,25 +48,18 @@ void BB_Synchronizer::broadcast(boost::system::error_code error){
     
     Log::log().Print("Peer # %d broadcasting bb header %lld\n",pid, bb_list.size());
     if(!is_BB_empty()){
-        Log::log().Print("Peer # %d broadcasting bb header %lld\n",pid, bb_list.size());
         for (unsigned int i = 0; i < peer_list.size(); i++) {
-            Message m;
-            m.pid = pid;
-            m.h = bb_list.back()->current;
-            if (i != pid) peer_list[i]->io_service.post(boost::bind(&BB_Synchronizer::sync, peer_list[i]->bb_synchronizer, m));
+            if (i != pid)
+                peer_list[i]->io_service.post(boost::bind(&BB_Synchronizer::sync, peer_list[i]->bb_synchronizer, Message(bb_list.back()->current,pid)));
         }
     }
    
-    t_broadcast.expires_from_now(boost::posix_time::seconds(5));
+    t_broadcast.expires_from_now(boost::posix_time::seconds(7));
     t_broadcast.async_wait(strand.wrap(boost::bind(&BB_Synchronizer::broadcast,this,boost::asio::placeholders::error)));
 
 }
 
 void BB_Synchronizer::sync(Message m){
-    //if header of the latest BB is the same, the we stop
-    //we don't have that header, then add it
-    //TODO:
-    
     
     if (bb_list.empty() || bb_list.back()->target != m.h) {
         bb_list.push_back(new BackBundle(m.h));
@@ -81,9 +74,16 @@ void BB_Synchronizer::sync_bb(unsigned int p){
     boost::mutex::scoped_lock lock(mutex);
     boost::this_thread::sleep(boost::posix_time::seconds(1));
     
-    sync_c(bb_list.back()->get_list(), peer_list[p]->synchronizer->get_ts_list());
-    bb_list.back()->update_sync();
+    //TODO: for every header that is unsynced
+    //do the sync
+    for (unsigned int i = 0; i < bb_list.size(); i++) {
+        if (!bb_list[i]->is_bb_synced()) {
+            sync_c(bb_list.back()->get_list(), peer_list[p]->synchronizer->get_ts_list());
+            bb_list[i]->update_sync();
+        }
+    }
     
+    synchronizer->remove_dup(bb_list.back()->get_list());
 }
 
 void BB_Synchronizer::add_BB(BackBundle * bb){
@@ -113,50 +113,3 @@ bool BB_Synchronizer::is_ts_in_BB(uint64_t ts){
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////
-
-//
-//bool BB_Synchronizer::is_BB_empty(){
-//    return bb_list.empty();
-//}
-////there is still a problem here
-//BackBundle::Header BB_Synchronizer::get_latest_header(){
-//    return bb_list.back()->get_header();
-//}
-//
-//bool BB_Synchronizer::is_header_in_BB(BackBundle::Header h){
-//    if (is_BB_empty()) return false;
-//    
-//    for (unsigned int i = 0; i < bb_list.size(); i++) {
-//        if (bb_list[i]->get_header() == h) return true;
-//    }
-//    return false;
-//}
-//
-
-//
-
-//
-//bool BB_Synchronizer::is_ts_in_BB(uint64_t ts){
-//    for (unsigned int i = 0; i < bb_list.size(); i++) {
-//        if (bb_list[i]->search(ts)) return true;
-//    }
-//    return false;
-//}
-//
-////Here should be a synchronizer, should only be used when there is a header
-//void BB_Synchronizer::try_pack_BB(std::vector<uint64_t> &sync){ //pass in a bool&?
-//    
-//    BackBundle::Header h = get_latest_header();
-//    //find item before that
-//    unsigned int high = 0; unsigned int low = (int) sync.size()-1;
-//    for (; high < sync.size(); high++) if (h.to > sync[high]) break;
-//    for (; low > 0 ; low--) if (h.from < sync[low]) break;
-//    
-//    //have high and low now
-//    bb_list.back()->set(sync, low, high);
-//    //Currently , if the size doesn't match , we know it is not compelte
-//    
-//}
-

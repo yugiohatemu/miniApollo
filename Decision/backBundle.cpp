@@ -17,7 +17,7 @@ BackBundle::BackBundle(std::vector<uint64_t> & sync, unsigned int size):size(siz
     //we do all of them here because I want this process to be atomic
     ts_list.reserve(size);
     for (unsigned int i =0; i < size; i++) ts_list.push_back(sync[i]);
-    sync.erase(sync.begin(),sync.end() + size);
+//    sync.erase(sync.begin(),sync.end() + size);
 }
 
 BackBundle::BackBundle(Header &h):target(h), size(h.size),bb_empty(true){

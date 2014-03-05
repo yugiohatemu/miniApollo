@@ -38,14 +38,14 @@ public:
     boost::system::error_code error;
     
     template <typename TFunc>
-    void enqueue(TFunc fun){
-        io_service.post(boost::bind( &Peer::execute<TFunc>, this, fun ));
+    void enqueue(TFunc func){
+        io_service.post(strand.wrap(boost::bind( &Peer::execute<TFunc>, this, func )));
     }
     void start_bully(const boost::system::error_code &e);
 private:
     template <typename TFunc>
-    void execute(TFunc fun){
-        if(online) fun();
+    void execute(TFunc func){
+        if(online) func();
     }
     
    
@@ -68,7 +68,7 @@ private:
     
     void cancel_all();
     
-    void new_feed();
+    void new_feed(const boost::system::error_code &e);
     void read_feed();
     
     void get_online();

@@ -23,6 +23,7 @@ class BB_Synchronizer{
     struct Message{
         BackBundle::Header h;
         unsigned int pid;
+        Message(BackBundle::Header h, unsigned int pid):h(h),pid(pid){}
     };
     
     unsigned int pid;
