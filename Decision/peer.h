@@ -9,7 +9,6 @@
 #ifndef __Decision__peer__
 #define __Decision__peer__
 
-#include "backBundle.h"
 #include "dataPool.h"
 #include "bbSynchronizer.h"
 #include "synchronizer.h"
@@ -29,7 +28,6 @@ class Peer{
 public:
     unsigned int pid;
     float availability;
-    unsigned int bb_count;
     Peer(unsigned int pid,std::vector<Peer *> &peer_list, DataPool * data_pool);
     ~Peer();
     
@@ -40,7 +38,6 @@ public:
     boost::asio::io_service io_service;
     boost::system::error_code error;
     
-    std::vector<uint64_t>& get_ts_list();
     template <typename TFunc>
     void enqueue(TFunc fun){
         io_service.post(boost::bind( &Peer::execute<TFunc>, this, fun ));
@@ -82,11 +79,6 @@ private:
     
     void start_bully(const boost::system::error_code &e);
     void finish_bully(const boost::system::error_code &e);
-    
-    void get_header(BackBundle::Header header); //copy Header from BB, or just the actual BB now
-    void broadcast_header();
-    
-    void sync_BB(const boost::system::error_code &e);
 };
 
 #endif /* defined(__Decision__peer__) */

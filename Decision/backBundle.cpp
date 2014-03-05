@@ -9,13 +9,13 @@
 #include "backBundle.h"
 #include <algorithm>
 
-BackBundle::BackBundle(std::vector<uint64_t> & sync, unsigned int size):size(size), header(sync, size){
+BackBundle::BackBundle(std::vector<uint64_t> & sync, unsigned int size):size(size), target(sync, size){
     set(sync, size);
+    current = target;
     bb_synced = true;
-    
 }
 
-BackBundle::BackBundle(Header &h):header(h), size(h.size),bb_empty(true){
+BackBundle::BackBundle(Header &h):target(h), size(h.size),bb_empty(true){
     bb_synced = false;
 }
 
@@ -39,7 +39,7 @@ BackBundle::~BackBundle(){
 }
 
 ////////////////////////
-bool BackBundle::search(uint64_t ts){
+bool BackBundle::is_ts_in_bb(uint64_t ts){
     if (bb_empty) return false;
     else return  std::binary_search(ts_list.begin(), ts_list.end(), ts);
 }
@@ -54,7 +54,7 @@ bool BackBundle::operator<(const BackBundle & bb) const{
 }
 
 BackBundle::Header BackBundle::get_header(){
-    return header;
+    return current;
 }
 
 bool BackBundle::is_bb_empty(){
@@ -62,5 +62,6 @@ bool BackBundle::is_bb_empty(){
 }
 
 bool BackBundle::is_bb_synced(){
+    if (target == current) bb_synced = true;
     return bb_synced;
 }

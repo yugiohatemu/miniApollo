@@ -28,10 +28,12 @@ Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,DataPool * data_pool)
 {
         //Init timers for that
     availability =  (float)(rand() % 10 + 1) / 10;
-    bb_count = 0;
 
-    synchronizer = new Synchronizer(io_service,strand,pid, peer_list);
-    bb_synchronizer = new BB_Synchronizer(io_service,strand,pid, peer_list);
+    synchronizer = new Synchronizer(io_service,strand,pid,peer_list);
+    bb_synchronizer = new BB_Synchronizer(io_service,strand,pid,peer_list);
+    synchronizer->bb_synchronizer = bb_synchronizer;
+    bb_synchronizer->synchronizer = synchronizer;
+    
     
     for (unsigned int i = 0; i < 3; i++) {
         thread_group.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
@@ -51,21 +53,20 @@ Peer::~Peer(){
     thread_group.join_all();
     
     delete synchronizer;
-//    delete bb_synchronizer;
-    Log::log().Print("Peer # %d deleted with packed bb # %d\n",pid, bb_count);
+    delete bb_synchronizer;
+    Log::log().Print("Peer # %d deleted with packed bb # %d\n",pid);
    
 }
 
 void Peer::cancel_all(){
     online = false;
     synchronizer->stop();
+    bb_synchronizer->stop();
     
     t_bully_other.cancel();
     t_being_bully.cancel();
     
     t_new_feed.cancel();
-    
-//    t_sync_BB.cancel();
     
     state = NOTHING;
     
@@ -86,11 +87,10 @@ void Peer::get_online(){
     state = NOTHING;
     
     synchronizer->start();
+    bb_synchronizer->start();
     
     t_new_feed.expires_from_now(boost::posix_time::seconds(rand() % 6 + 2));
     t_new_feed.async_wait(strand.wrap(boost::bind(&Peer::new_feed,this)));
-    
-//    t_sync_BB.expires_from_now(boost::posix_time::seconds(15));
     
     Log::log().Print("Peer # %d get online\n",pid);
     
@@ -127,34 +127,6 @@ void Peer::read_feed(){
     
 }
 
-//communicate with other BB
-void Peer::sync_BB(const boost::system::error_code &e){
-    if(e == boost::asio::error::operation_aborted || !online ){
-        Log::log().Print("Peer # %d cancel try_bb\n",pid);
-        return ;
-    }
-    //we have a header...emm, so it is the same thing
-    
-//    if (bb_synchronizer->is_BB_empty() || bb_synchronizer->is_BB_synced()) {
-//        t_sync_BB.expires_from_now(boost::posix_time::seconds(15));
-//        t_sync_BB.async_wait(strand.wrap(boost::bind(&Peer::sync_BB,this, boost::asio::placeholders::error)));
-//    }else{
-        //reach that condition
-//        if ((bb_synchronizer->is_BB_synced() || bb_synchronizer->is_BB_empty()) && state == NOTHING && synchronizer.size() > BB_SIZE ) {
-//            state = BULLY_OTHER;
-//            io_service.post(strand.wrap(boost::bind(&Peer::start_bully, this, error)));
-//        }else{
-            //new thread????? to connect them?
-            //hmm.....
-            
-            //based on our header, we should have a BB synchronizing timer
-            
-            //in order for it to be robust, handle this to the BB_synchronizer
-            
-            //so we know there has to be something in there
-//        }
-//    }
-}
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark - Bully algorithm
 void Peer::start_bully(const boost::system::error_code &e){
@@ -215,15 +187,6 @@ void Peer::finish_bully(const boost::system::error_code &e){
     }
     
     boost::mutex::scoped_lock scoped_lock(sync_lock);
-    
-    //atomic operation
-//    bb_synchronizer->add_BB(new BackBundle(synchronizer, BB_SIZE));
-    Log::log().Print("Peer # %d pack full BB %d\n",pid, bb_count);
-    bb_count++;
-    
-    //broadcast header
-//    io_service.post(strand.wrap(boost::bind(&Peer::broadcast_header,this)));
-    
 }
 
 
@@ -232,8 +195,8 @@ void Peer::finish_bully(const boost::system::error_code &e){
 
 //we need a counter, we don't care about time
 //we only broadcast the latest one
-void Peer::broadcast_header(){
-    if (!online) return ;
+//void Peer::broadcast_header(){
+//    if (!online) return ;
 //    if (bb_synchronizer->is_BB_empty()) return ;
 //    //BroadCast for a certain amount of timer ?
 //    Log::log().Print("Peer # %d broadcast header\n",pid);
@@ -242,17 +205,17 @@ void Peer::broadcast_header(){
 //    for (unsigned int i = 0; i < peer_list.size(); i++) {
 //        if(i != pid) peer_list[i]->io_service.post(boost::bind(&Peer::get_header,peer_list[i], header));
 //    }
-}
+//}
 
 //broadcast header...if sent
-void Peer::get_header(BackBundle::Header header){
-    if (!online) return;
-    
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-    
+//void Peer::get_header(BackBundle::Header header){
+//    if (!online) return;
+//    
+//    boost::this_thread::sleep(boost::posix_time::seconds(1));
+//    
 //    if (bb_synchronizer->is_BB_empty() || !bb_synchronizer->is_header_in_BB(header)) {
 //        bb_synchronizer->add_empty_BB_with_header(header);
 //    }
     //try syncing
-}
+//}
 

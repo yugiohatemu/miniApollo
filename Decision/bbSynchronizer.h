@@ -9,27 +9,48 @@
 #ifndef __Decision__bbSynchronizer__
 #define __Decision__bbSynchronizer__
 
-#include <vector>
 #include "backBundle.h"
+#include <boost/asio.hpp>
+#include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
 #include <inttypes.h>
+#include <vector>
+
+class Peer;
+class Synchronizer;
+
 class BB_Synchronizer{
+    struct Message{
+        BackBundle::Header h;
+        unsigned int pid;
+    };
+    
+    unsigned int pid;
+    boost::system::error_code error;
+    boost::asio::io_service &io_service;
+    boost::asio::io_service::strand &strand;
+    std::vector<Peer *> &peer_list;
+    boost::asio::deadline_timer t_broadcast;
+    boost::mutex mutex;
+    
     std::vector<BackBundle *> bb_list;
+
+    void broadcast(boost::system::error_code error);
+    void sync(Message m);
+    void sync_bb(unsigned int p);
 public:
-    BB_Synchronizer();
+    BB_Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list);
     ~BB_Synchronizer();
-    bool is_BB_synced();
-    BackBundle::Header get_latest_header();
+    
+    Synchronizer * synchronizer;
     void add_BB(BackBundle * BB);
     void add_empty_BB_with_header(BackBundle::Header &h);
-    
     bool is_BB_empty();
-    bool is_ts_in_BB(uint64_t ts);
-    bool is_header_in_BB(BackBundle::Header h);
+    bool is_BB_synced();
+    void stop();
+    void start();
     
-    void try_pack_BB(std::vector<uint64_t> &sync);
-   
-    //BackBundle::Header  get_specific_header
-    //BackBundle get_back_bundle_with_header(Header h)
+    bool is_ts_in_BB(uint64_t ts);
 };
 
 #endif /* defined(__Decision__bbSynchronizer__) */
