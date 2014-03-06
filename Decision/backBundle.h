@@ -18,7 +18,7 @@ public:
     struct Header{
         unsigned int size;
         uint64_t from, to;
-        Header(std::vector<uint64_t> & sync):size((int)sync.size()),from(sync.front()),to(sync.back()){}
+        Header(std::vector<uint64_t> & sync):size((unsigned int)sync.size()),from(sync.front()),to(sync.back()){}
         Header(std::vector<uint64_t> & sync, unsigned int size):size(size), from(sync.front()), to(sync.back()){}
         Header():size(0), from(0), to(0){}
         Header(const Header & h):size(h.size), from(h.from), to(h.to){}
@@ -35,7 +35,7 @@ public:
     BackBundle(const BackBundle & b);
     ~BackBundle();
     
-    std::vector<uint64_t>& get_list();
+    std::vector<uint64_t> get_list();
 
     bool is_ts_in_bb(uint64_t ts);
     void add_ts(uint64_t ts);
@@ -47,6 +47,7 @@ public:
     bool is_bb_synced();
     void update_sync();
     unsigned int size();
+    void sync(BackBundle * bb);
 private:
     
     std::vector<uint64_t> ts_list;

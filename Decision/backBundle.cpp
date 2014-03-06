@@ -13,11 +13,12 @@
 BackBundle::BackBundle(std::vector<uint64_t> & sync, unsigned int size): target(sync, size){
     current = target;
     bb_synced = true;
-    
-    //we do all of them here because I want this process to be atomic
     ts_list.reserve(size);
     for (unsigned int i =0; i < size; i++) ts_list.push_back(sync[i]);
-//    sync.erase(sync.begin(),sync.end() + size);
+}
+
+BackBundle::BackBundle(Header &h):target(h),current(){
+    bb_synced = (target == current);
 }
 
 BackBundle::BackBundle(const BackBundle & b){
@@ -28,20 +29,32 @@ BackBundle::BackBundle(const BackBundle & b){
     
 }
 
-BackBundle::BackBundle(Header &h):target(h){
-    bb_synced = false;
-}
-
 BackBundle::~BackBundle(){
     if (ts_list.empty()) {
         Log::log().Print("BB empty\n");
     }else
-        Log::log().Print("BB size: %d %lld - %lld, synced: %c\n", ts_list.size(), ts_list.front(),ts_list.back(), bb_synced ? 'Y':'N');
+        Log::log().Print("BB size: %d %lld - %lld, synced: %c\n", ts_list.size(), ts_list.front(),ts_list.back(), (bb_synced || target == current ) ? 'Y':'N');
 }
 
 ////////////////////////
 
-std::vector<uint64_t>& BackBundle::get_list(){
+void BackBundle::sync(BackBundle * bb){
+    
+    std::vector<uint64_t> other_list = bb->get_list();
+    if (ts_list.empty()) {
+        for (unsigned int i =0; i < other_list.size(); i++) ts_list.push_back(other_list[i]);
+    }else{
+        for (unsigned int i = 0; i < other_list.size(); i++) {
+            if (!is_ts_in_bb(other_list[i]))ts_list.push_back(other_list[i]);
+        }
+        std::sort(ts_list.begin(), ts_list.end());
+    }
+    //Update them!!!
+    current = Header(ts_list);
+    bb_synced = (target == current);
+}
+
+std::vector<uint64_t> BackBundle::get_list(){
     return ts_list;
 }
 
@@ -65,12 +78,12 @@ bool BackBundle::operator<(const BackBundle & bb) const{
 }
 
 bool BackBundle::is_bb_synced(){
-    if (target == current) bb_synced = true;
+    if (ts_list.empty()) return false;
     return bb_synced;
 }
 
 void BackBundle::update_sync(){
     //recreate header based on current content
-    if (!ts_list.empty()) target = Header(ts_list);
+    if (!ts_list.empty()) current = Header(ts_list);
     bb_synced = (target == current);
 }

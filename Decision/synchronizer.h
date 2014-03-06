@@ -53,7 +53,7 @@ public:
     void clean_up(boost::system::error_code error);
     void first_clean_up();
     void clean_up_done();
-    void remove_dup(std::vector<uint64_t> &list);
+    void remove_dup(std::vector<uint64_t> list);
 };
 
 #endif /* defined(__Decision__synchronizer__) */

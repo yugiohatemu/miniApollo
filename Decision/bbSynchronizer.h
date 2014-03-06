@@ -38,7 +38,7 @@ class BB_Synchronizer{
 
     void broadcast(boost::system::error_code error);
     void sync(Message m);
-    void sync_bb(unsigned int p);
+//    void sync_bb(unsigned int p);
 public:
     BB_Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list);
     ~BB_Synchronizer();
@@ -50,9 +50,10 @@ public:
     bool is_BB_synced();
     void stop();
     void start();
-    
+    void sync_bb(boost::system::error_code error);
     bool is_ts_in_BB(uint64_t ts);
-    std::vector<uint64_t>& get_ts_list(unsigned int i);
+    std::vector<uint64_t> get_ts_list(unsigned int i);
+    BackBundle* get_BB_with_header(BackBundle::Header h);
 };
 
 #endif /* defined(__Decision__bbSynchronizer__) */

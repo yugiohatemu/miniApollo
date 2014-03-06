@@ -87,7 +87,7 @@ void Synchronizer::broadcast(boost::system::error_code error){
             peer_list[i]->enqueue(boost::protect(boost::bind(&Synchronizer::sync, peer_list[i]->synchronizer, ts_list)));
     }
     
-    t_broadcast.expires_from_now(boost::posix_time::seconds(10));
+    t_broadcast.expires_from_now(boost::posix_time::seconds(7));
     t_broadcast.async_wait(strand.wrap(boost::bind(&Synchronizer::broadcast,this,boost::asio::placeholders::error)));
     
 }
@@ -114,16 +114,6 @@ void Synchronizer::sync(std::vector<uint64_t> &other_list){
     
     std::sort(ts_list.begin(), ts_list.end());
 }
-//    Log::log().Print("%d being syncd\n",pid);
-//    for(unsigned int i = 0; i < other_list.size();i++){
-//        Log::log().Print("pid #%d: %d - %lld\n",pid,i,other_list[i]);
-//    }
-//    for (unsigned int i = 0; i < ts_list.size(); i++) {
-//        Log::log().Print("pid #%d: %d - %lld\n",pid,i,ts_list[i]);
-//
-//    }
-
-//    if (!bb_synchronizer || bb_synchronizer->is_BB_empty()) return ;
 
 
 void Synchronizer::clean_up(boost::system::error_code e){
@@ -132,7 +122,6 @@ void Synchronizer::clean_up(boost::system::error_code e){
     boost::mutex::scoped_lock lock(mutex);
     if (ts_list.size() > BB_SIZE && !BB_started) {
         if (bb_synchronizer->is_BB_empty() || bb_synchronizer->is_BB_synced()) {
-            Log::log().Print("Peer # %d syncrhonizer try BB\n",pid);
             BB_started = true;
             peer_list[pid]->enqueue(boost::protect(boost::bind(&Peer::start_bully, peer_list[pid], error)));
         }else{
@@ -146,30 +135,21 @@ void Synchronizer::clean_up(boost::system::error_code e){
 
 void Synchronizer::first_clean_up(){
     //create our BB bundle
-    
-//    {
-        boost::mutex::scoped_lock lock(mutex);
-        unsigned int t = std::min((int)ts_list.size()-1, BB_SIZE);
-        Log::log().Print("Peer # %d syncrhonizer create BB with size %d\n",pid, t);
-        bb_synchronizer->add_BB(new BackBundle(ts_list, t));
-        ts_list.erase(ts_list.begin(), ts_list.begin() + t);
-//    }
-    
-    //TODO: maybe move cleanup_done to here?
-//    for (unsigned int i = 0; i < peer_list.size(); i++){
-//        peer_list[i]->io_service.post(boost::bind(&Synchronizer::clean_up_done, peer_list[i]->synchronizer));
-//    }
+    boost::mutex::scoped_lock lock(mutex);
+    unsigned int t = std::min((int)ts_list.size()-1, BB_SIZE);
+    Log::log().Print("Peer # %d syncrhonizer create BB with size %d\n",pid, t);
+    bb_synchronizer->add_BB(new BackBundle(ts_list, t));
+    ts_list.erase(ts_list.begin(), ts_list.begin() + t);
 }
 
 void Synchronizer::clean_up_done(){
     BB_started = false;
-    Log::log().Print("Peer # %d clean up done\n",pid);
-    
-    t_clean_up.expires_from_now(boost::posix_time::seconds(10));
+  
+    t_clean_up.expires_from_now(boost::posix_time::seconds(20));
     t_clean_up.async_wait(strand.wrap(boost::bind(&Synchronizer::clean_up,this, boost::asio::placeholders::error)));
 }
 
-void Synchronizer::remove_dup(std::vector<uint64_t> &list){
+void Synchronizer::remove_dup(std::vector<uint64_t> list){
     boost::mutex::scoped_lock lock(mutex);
     for (unsigned int i = 0; i < list.size(); i++) {
         std::vector<uint64_t>:: iterator it = std::find(ts_list.begin(), ts_list.end(), list[i]);
