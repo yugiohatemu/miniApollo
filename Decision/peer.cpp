@@ -29,7 +29,7 @@ Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,PriorityPeer * priori
 {
         //Init timers for that
     availability =  (float)(rand() % 10 + 1) / 10;
-    if(availability < 0.5) availability = 0.5;
+    if(availability < 0.5) availability = 0.7;
     
     synchronizer = new Synchronizer(io_service,strand,pid,peer_list);
     bb_synchronizer = new BB_Synchronizer(io_service,strand,pid,peer_list);
@@ -97,8 +97,8 @@ void Peer::get_online(){
     
     Log::log().Print("Peer # %d get online\n",pid);
     
-    t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 20 * availability + rand() % 5));
-    t_on_off_line.async_wait(boost::bind(&Peer::get_offline,this));
+//    t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 20 * availability + rand() % 5));
+//    t_on_off_line.async_wait(boost::bind(&Peer::get_offline,this));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

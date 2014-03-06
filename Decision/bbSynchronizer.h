@@ -52,8 +52,9 @@ public:
     void start();
     void sync_bb(boost::system::error_code error);
     bool is_ts_in_BB(uint64_t ts);
-    std::vector<uint64_t> get_ts_list(unsigned int i);
+    
     BackBundle* get_BB_with_header(BackBundle::Header h);
+    bool is_header_existed(BackBundle::Header h);
 };
 
 #endif /* defined(__Decision__bbSynchronizer__) */

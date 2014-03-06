@@ -16,7 +16,7 @@
 #include "sync_c.h"
 #include "bbSynchronizer.h"
 
-const int BB_SIZE = 10;
+const int BB_SIZE = 7;
 
 Synchronizer::Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list):
     io_service(io_service),
@@ -145,7 +145,7 @@ void Synchronizer::first_clean_up(){
 void Synchronizer::clean_up_done(){
     BB_started = false;
   
-    t_clean_up.expires_from_now(boost::posix_time::seconds(20));
+    t_clean_up.expires_from_now(boost::posix_time::seconds(7));
     t_clean_up.async_wait(strand.wrap(boost::bind(&Synchronizer::clean_up,this, boost::asio::placeholders::error)));
 }
 

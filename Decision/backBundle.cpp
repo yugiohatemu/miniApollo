@@ -31,7 +31,7 @@ BackBundle::BackBundle(const BackBundle & b){
 
 BackBundle::~BackBundle(){
     if (ts_list.empty()) {
-        Log::log().Print("BB empty\n");
+        Log::log().Print("BB empty with header %d %lld - %lld\n", target.size, target.from,target.to);
     }else
         Log::log().Print("BB size: %d %lld - %lld, synced: %c\n", ts_list.size(), ts_list.front(),ts_list.back(), (bb_synced || target == current ) ? 'Y':'N');
 }
@@ -42,16 +42,22 @@ void BackBundle::sync(BackBundle * bb){
     
     std::vector<uint64_t> other_list = bb->get_list();
     if (ts_list.empty()) {
+//        Log::log().Print("Doing Copy\n");
         for (unsigned int i =0; i < other_list.size(); i++) ts_list.push_back(other_list[i]);
+        
     }else{
+//        Log::log().Print("Doing Merge\n");
         for (unsigned int i = 0; i < other_list.size(); i++) {
             if (!is_ts_in_bb(other_list[i]))ts_list.push_back(other_list[i]);
         }
         std::sort(ts_list.begin(), ts_list.end());
     }
     //Update them!!!
-    current = Header(ts_list);
+    current = BackBundle::Header(ts_list);
+    
     bb_synced = (target == current);
+//    Log::log().Print("C: %d %lld %lld - T: %d %lld %lld = %c\n",current.size,current.from,current.to, target.size,target.from,target.to, bb_synced ? 'y':'n');
+//    Log::log().Print("TS: %d %lld %lld \n",ts_list.size(), ts_list.front(),ts_list.back());
 }
 
 std::vector<uint64_t> BackBundle::get_list(){
