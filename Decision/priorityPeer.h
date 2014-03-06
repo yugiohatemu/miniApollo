@@ -15,6 +15,7 @@
 #include "backBundle.h"
 
 //Acts as a Priority peer so that it is always on line to keep all data
+//Technically it is an instance
 
 class PriorityPeer{
     std::vector<uint64_t> ts_list;
@@ -25,6 +26,7 @@ public:
     ~PriorityPeer();
     void add_ts(uint64_t ts);
     void add_bb(BackBundle * bb);
+    //sign up????
     //if no body is online
     //ask for update from PriorityPeer
 };

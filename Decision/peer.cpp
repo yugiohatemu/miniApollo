@@ -16,8 +16,8 @@
 #include <algorithm>
 #include "log.h"
 
-Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,DataPool * data_pool):
-    pid(pid), peer_list(peer_list),data_pool(data_pool),
+Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,PriorityPeer * priority_peer):
+    pid(pid), peer_list(peer_list),priority_peer(priority_peer),
     work(io_service), strand(io_service),
     t_new_feed(io_service, boost::posix_time::seconds(0)),
     t_on_off_line(io_service, boost::posix_time::seconds(15)),
@@ -29,7 +29,8 @@ Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,DataPool * data_pool)
 {
         //Init timers for that
     availability =  (float)(rand() % 10 + 1) / 10;
-
+    if(availability < 0.5) availability = 0.5;
+    
     synchronizer = new Synchronizer(io_service,strand,pid,peer_list);
     bb_synchronizer = new BB_Synchronizer(io_service,strand,pid,peer_list);
     synchronizer->bb_synchronizer = bb_synchronizer;
@@ -79,7 +80,7 @@ void Peer::get_offline(){
     
     Log::log().Print("Peer # %d get offline\n",pid);
     
-    t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 20 *(1-availability) + rand() % 10));
+    t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 30 *(1-availability) + rand() % 10));
     t_on_off_line.async_wait(strand.wrap(boost::bind(&Peer::get_online,this)));
     
 }
@@ -114,7 +115,7 @@ void Peer::new_feed(const boost::system::error_code &e){
     
     sync_lock.lock();
     synchronizer->add_ts(current_time);
-    data_pool->add_ts(current_time);
+    priority_peer->add_ts(current_time);
     sync_lock.unlock();
     
     t_new_feed.expires_from_now(boost::posix_time::seconds(rand() % 6 + 5));
@@ -125,7 +126,7 @@ void Peer::new_feed(const boost::system::error_code &e){
 void Peer::read_feed(){
     if (!online) return ;
     
-//    uint64_t ts =  data_pool->get_random_ts();
+//    uint64_t ts =  priority_peer->get_random_ts();
     
 }
 
@@ -167,7 +168,6 @@ void Peer::get_bullyed(Peer::Message m){
         
 //        Log::log().Print("Peer # %d start bully back %d\n",pid,m.p);
         enqueue(boost::protect(boost::bind(&Peer::start_bully,this,error)));
-//        io_service.post(strand.wrap(boost::bind(&Peer::start_bully,this,error)));
         
         
     }else{
@@ -179,6 +179,15 @@ void Peer::get_bullyed(Peer::Message m){
         t_being_bully.expires_from_now(boost::posix_time::seconds(5));
         t_being_bully.async_wait(strand.wrap(boost::bind(&Peer::start_bully,this,boost::asio::placeholders::error)));
     }
+}
+
+void Peer::cancel_bully(const boost::system::error_code &e){
+    if (e == boost::asio::error::operation_aborted || !online) {
+        return ;
+    }
+    Log::log().Print("Peer # %d cancel bully\n",pid);
+    t_bully_other.cancel();
+    t_being_bully.cancel();
 }
 
 void Peer::finish_bully(const boost::system::error_code &e){

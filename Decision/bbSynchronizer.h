@@ -52,6 +52,7 @@ public:
     void start();
     
     bool is_ts_in_BB(uint64_t ts);
+    std::vector<uint64_t>& get_ts_list(unsigned int i);
 };
 
 #endif /* defined(__Decision__bbSynchronizer__) */

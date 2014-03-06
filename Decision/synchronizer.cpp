@@ -131,10 +131,13 @@ void Synchronizer::clean_up(boost::system::error_code e){
     
     boost::mutex::scoped_lock lock(mutex);
     if (ts_list.size() > BB_SIZE && !BB_started) {
-        Log::log().Print("Peer # %d syncrhonizer try BB\n",pid);
-        BB_started = true;
-        peer_list[pid]->enqueue(boost::protect(boost::bind(&Peer::start_bully, peer_list[pid], error)));
-//        peer_list[pid]->io_service.post(strand.wrap(boost::bind(&Peer::start_bully, peer_list[pid], error)));
+        if (bb_synchronizer->is_BB_empty() || bb_synchronizer->is_BB_synced()) {
+            Log::log().Print("Peer # %d syncrhonizer try BB\n",pid);
+            BB_started = true;
+            peer_list[pid]->enqueue(boost::protect(boost::bind(&Peer::start_bully, peer_list[pid], error)));
+        }else{
+            //maybe syncs up more frequently
+        }
     }else{
         t_clean_up.expires_from_now(boost::posix_time::seconds(7));
         t_clean_up.async_wait(strand.wrap(boost::bind(&Synchronizer::clean_up,this, boost::asio::placeholders::error)));

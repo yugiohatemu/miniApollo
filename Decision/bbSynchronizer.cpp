@@ -11,6 +11,7 @@
 #include "log.h"
 #include "sync_c.h"
 #include "synchronizer.h"
+#include <boost/bind/protect.hpp>
 
 BB_Synchronizer::BB_Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list):
     io_service(io_service),
@@ -25,7 +26,7 @@ BB_Synchronizer::BB_Synchronizer(boost::asio::io_service &io_service, boost::asi
 BB_Synchronizer::~BB_Synchronizer(){
     Log::log().Print("Peer # %d bb_synchronizer has bb %lld\n", pid, bb_list.size());
     for (unsigned int i = 0; i < bb_list.size(); i++){
-        Log::log().Print("Peer # bb %d synced %c\n",i, (bb_list[i]->is_bb_synced() ? 'y':'n'));
+//        Log::log().Print("Peer # bb %d with %lld items synced %c\n",i,bb_list[i]->size(),(bb_list[i]->is_bb_synced() ? 'y':'n'));
         delete bb_list[i];
     }
 
@@ -50,7 +51,7 @@ void BB_Synchronizer::broadcast(boost::system::error_code error){
     if(!is_BB_empty()){
         for (unsigned int i = 0; i < peer_list.size(); i++) {
             if (i != pid)
-                peer_list[i]->io_service.post(boost::bind(&BB_Synchronizer::sync, peer_list[i]->bb_synchronizer, Message(bb_list.back()->current,pid)));
+                peer_list[i]->enqueue(boost::protect(boost::bind(&BB_Synchronizer::sync, peer_list[i]->bb_synchronizer, Message(bb_list.back()->current,pid))));
         }
     }
    
@@ -63,11 +64,14 @@ void BB_Synchronizer::sync(Message m){
     
     if (bb_list.empty() || bb_list.back()->target != m.h) {
         bb_list.push_back(new BackBundle(m.h));
+        //TODO: ask the peer to cancel any bully
+        peer_list[pid]->enqueue(boost::protect(boost::bind(&Peer::cancel_bully,peer_list[pid], error)));
+        
     }else if(bb_list.back()->current == m.h){
+        bb_list.back()->update_sync();
         return;
     }
-    
-    io_service.post(strand.wrap(boost::bind(&BB_Synchronizer::sync_bb ,this, m.pid)));
+    peer_list[pid]->enqueue(boost::protect(boost::bind(&BB_Synchronizer::sync_bb ,this, m.pid)));
 }
 
 void BB_Synchronizer::sync_bb(unsigned int p){
@@ -76,14 +80,35 @@ void BB_Synchronizer::sync_bb(unsigned int p){
     
     //TODO: for every header that is unsynced
     //do the sync
+    
     for (unsigned int i = 0; i < bb_list.size(); i++) {
         if (!bb_list[i]->is_bb_synced()) {
-            sync_c(bb_list.back()->get_list(), peer_list[p]->synchronizer->get_ts_list());
+            
+    
+            //TODO: add a function for synchronizer to commute with its BB to sync directly
+            //make this function local then
+//            sync_c(bb_list[i]->get_list(), peer_list[p]->bb_synchronizer->get_ts_list(i));
+            //
+            std::vector<uint64_t> source = get_ts_list(i);
+            std::vector<uint64_t> target = peer_list[p]->bb_synchronizer->get_ts_list(i);
+            std::vector<uint64_t> diff;
+            for (unsigned int i = 0; i < target.size(); i++) {
+                bool found = std::binary_search(source.begin(), source.end(), target[i]);
+                if (!found) source.push_back(target[i]);
+            }
+            std::sort(source.begin(), source.end());
             bb_list[i]->update_sync();
+            
+            synchronizer->remove_dup(bb_list[i]->get_list());
         }
     }
-    
-    synchronizer->remove_dup(bb_list.back()->get_list());
+}
+
+
+//get specific bb list based on header
+//use int to cheat for now
+std::vector<uint64_t>& BB_Synchronizer::get_ts_list(unsigned int i){
+    return bb_list[i]->get_list();
 }
 
 void BB_Synchronizer::add_BB(BackBundle * bb){
@@ -101,7 +126,13 @@ bool BB_Synchronizer::is_BB_empty(){
 }
 
 bool BB_Synchronizer::is_BB_synced(){
-    return bb_list.back()->is_bb_synced();
+    for (unsigned int i = 0;  i < bb_list.size(); i++) {
+        if (!bb_list[i]->is_bb_synced()) {
+            return false;
+        }
+    }
+    
+    return true;
 }
 
 //In future it will be probability instead of true or false

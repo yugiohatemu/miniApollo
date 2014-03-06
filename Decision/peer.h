@@ -9,7 +9,7 @@
 #ifndef __Decision__peer__
 #define __Decision__peer__
 
-#include "dataPool.h"
+#include "priorityPeer.h"
 #include "bbSynchronizer.h"
 #include "synchronizer.h"
 
@@ -27,7 +27,7 @@ class Peer{
 public:
     unsigned int pid;
     float availability;
-    Peer(unsigned int pid,std::vector<Peer *> &peer_list, DataPool * data_pool);
+    Peer(unsigned int pid,std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
     ~Peer();
     
     void get_bullyed(Message m);
@@ -42,6 +42,7 @@ public:
         io_service.post(strand.wrap(boost::bind( &Peer::execute<TFunc>, this, func )));
     }
     void start_bully(const boost::system::error_code &e);
+    void cancel_bully(const boost::system::error_code &e);
 private:
     template <typename TFunc>
     void execute(TFunc func){
@@ -50,7 +51,7 @@ private:
     
    
     std::vector<Peer *> &peer_list;
-    DataPool * data_pool;
+    PriorityPeer * priority_peer;
     State state;
     
     boost::asio::io_service::work work;
