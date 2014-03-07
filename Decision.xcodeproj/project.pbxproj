@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		3B2CA1FF18BFA9BA0033B57C /* peer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B2CA1FD18BFA9BA0033B57C /* peer.cpp */; };
+		3B32E96918CA426300822708 /* syncPoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B32E96718CA426300822708 /* syncPoint.cpp */; };
+		3B32E96C18CA432900822708 /* syncHeader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B32E96A18CA432900822708 /* syncHeader.cpp */; };
 		3B407F8218C12F3800BA462F /* backBundle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B407F8018C12F3800BA462F /* backBundle.cpp */; };
 		3B407F8518C1366D00BA462F /* priorityPeer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B407F8318C1366D00BA462F /* priorityPeer.cpp */; };
 		3B471AB218C4FC12000AB6D5 /* log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B471AB018C4FC12000AB6D5 /* log.cpp */; };
@@ -35,6 +37,11 @@
 /* Begin PBXFileReference section */
 		3B2CA1FD18BFA9BA0033B57C /* peer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peer.cpp; sourceTree = "<group>"; };
 		3B2CA1FE18BFA9BA0033B57C /* peer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peer.h; sourceTree = "<group>"; };
+		3B32E96518CA421400822708 /* syncEntry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = syncEntry.h; sourceTree = "<group>"; };
+		3B32E96718CA426300822708 /* syncPoint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = syncPoint.cpp; sourceTree = "<group>"; };
+		3B32E96818CA426300822708 /* syncPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = syncPoint.h; sourceTree = "<group>"; };
+		3B32E96A18CA432900822708 /* syncHeader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = syncHeader.cpp; sourceTree = "<group>"; };
+		3B32E96B18CA432900822708 /* syncHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = syncHeader.h; sourceTree = "<group>"; };
 		3B407F8018C12F3800BA462F /* backBundle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = backBundle.cpp; sourceTree = "<group>"; };
 		3B407F8118C12F3800BA462F /* backBundle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = backBundle.h; sourceTree = "<group>"; };
 		3B407F8318C1366D00BA462F /* priorityPeer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = priorityPeer.cpp; sourceTree = "<group>"; };
@@ -90,6 +97,11 @@
 				3B2CA1FD18BFA9BA0033B57C /* peer.cpp */,
 				3B662CD518C6406B0087EAD5 /* synchronizer.h */,
 				3B662CD418C6406B0087EAD5 /* synchronizer.cpp */,
+				3B32E96518CA421400822708 /* syncEntry.h */,
+				3B32E96818CA426300822708 /* syncPoint.h */,
+				3B32E96718CA426300822708 /* syncPoint.cpp */,
+				3B32E96A18CA432900822708 /* syncHeader.cpp */,
+				3B32E96B18CA432900822708 /* syncHeader.h */,
 				3B471AB418C51BF6000AB6D5 /* bbSynchronizer.h */,
 				3B471AB318C51BF6000AB6D5 /* bbSynchronizer.cpp */,
 				3B407F8118C12F3800BA462F /* backBundle.h */,
@@ -156,8 +168,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3B32E96918CA426300822708 /* syncPoint.cpp in Sources */,
 				3B9DD29E18BCF709003EA4B9 /* main.cpp in Sources */,
 				3B407F8518C1366D00BA462F /* priorityPeer.cpp in Sources */,
+				3B32E96C18CA432900822708 /* syncHeader.cpp in Sources */,
 				3B662CD918C67F3C0087EAD5 /* sync_c.cpp in Sources */,
 				3B662CD618C6406B0087EAD5 /* synchronizer.cpp in Sources */,
 				3B2CA1FF18BFA9BA0033B57C /* peer.cpp in Sources */,
