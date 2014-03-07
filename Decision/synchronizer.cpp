@@ -13,7 +13,7 @@
 #include <boost/bind.hpp>
 #include <boost/bind/protect.hpp>
 #include <algorithm>
-#include "sync_c.h"
+//#include "sync_c.h"
 #include "bbSynchronizer.h"
 
 const int BB_SIZE = 7;

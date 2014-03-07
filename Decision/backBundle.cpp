@@ -18,7 +18,7 @@ BackBundle::BackBundle(std::vector<uint64_t> & sync, unsigned int size): target(
 }
 
 BackBundle::BackBundle(Header &h):target(h),current(){
-    bb_synced = (target == current);
+    bb_synced = false;
 }
 
 BackBundle::BackBundle(const BackBundle & b){

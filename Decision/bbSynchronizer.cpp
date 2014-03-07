@@ -9,7 +9,7 @@
 #include "bbSynchronizer.h"
 #include "peer.h"
 #include "log.h"
-#include "sync_c.h"
+//#include "sync_c.h"
 #include "synchronizer.h"
 #include <boost/bind/protect.hpp>
 
@@ -66,7 +66,7 @@ void BB_Synchronizer::sync(Message m){
     boost::mutex::scoped_lock lock(mutex);
     boost::this_thread::sleep(boost::posix_time::seconds(1));
     
-    if (bb_list.empty() || is_header_existed(m.h)) {
+    if (bb_list.empty() || !is_header_existed(m.h)) {
         bb_list.push_back(new BackBundle(m.h));
     }
     
@@ -87,6 +87,7 @@ void BB_Synchronizer::sync_bb(boost::system::error_code error){
                     BackBundle * bb = bb_list[i];
                     BackBundle * other_bb = peer_list[j]->bb_synchronizer->get_BB_with_header(bb->target);
                     if (other_bb){
+                        boost::mutex::scoped_lock lock(mutex);
                         bb->sync(other_bb);
                         synchronizer->remove_dup(bb->get_list());
                     }
