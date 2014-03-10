@@ -16,7 +16,7 @@
 #include <algorithm>
 #include "log.h"
 
-const unsigned int BULLY_TIME_OUT = 5;
+const unsigned int BULLY_TIME_OUT = 7;
 
 Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,PriorityPeer * priority_peer):
     pid(pid), peer_list(peer_list),priority_peer(priority_peer),

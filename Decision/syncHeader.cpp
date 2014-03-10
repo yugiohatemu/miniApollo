@@ -47,9 +47,12 @@ void SyncHeader::sync_with_self(std::vector<SyncEntry *>& se_list, unsigned int 
             se_list[i]->ts = 0;
         }
     }
-    std::sort(ts_list.begin(), ts_list.end());
-    BackBundle::Header current = BackBundle::Header(ts_list);
-    synced = (current == header);
+    
+    if(!ts_list.empty()){
+        std::sort(ts_list.begin(), ts_list.end());
+        BackBundle::Header current = BackBundle::Header(ts_list);
+        synced = (current == header);
+    }
 }
 
 void SyncHeader::sync_with_other_header(SyncHeader * other_sh){

@@ -13,7 +13,6 @@
 		3B407F8218C12F3800BA462F /* backBundle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B407F8018C12F3800BA462F /* backBundle.cpp */; };
 		3B407F8518C1366D00BA462F /* priorityPeer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B407F8318C1366D00BA462F /* priorityPeer.cpp */; };
 		3B471AB218C4FC12000AB6D5 /* log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B471AB018C4FC12000AB6D5 /* log.cpp */; };
-		3B471AB518C51BF6000AB6D5 /* bbSynchronizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B471AB318C51BF6000AB6D5 /* bbSynchronizer.cpp */; };
 		3B662CD618C6406B0087EAD5 /* synchronizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B662CD418C6406B0087EAD5 /* synchronizer.cpp */; };
 		3B9DD29E18BCF709003EA4B9 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B9DD29D18BCF709003EA4B9 /* main.cpp */; };
 		3B9DD2A018BCF709003EA4B9 /* Decision.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 3B9DD29F18BCF709003EA4B9 /* Decision.1 */; };
@@ -47,8 +46,6 @@
 		3B407F8418C1366D00BA462F /* priorityPeer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = priorityPeer.h; sourceTree = "<group>"; };
 		3B471AB018C4FC12000AB6D5 /* log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = log.cpp; sourceTree = "<group>"; };
 		3B471AB118C4FC12000AB6D5 /* log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log.h; sourceTree = "<group>"; };
-		3B471AB318C51BF6000AB6D5 /* bbSynchronizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bbSynchronizer.cpp; sourceTree = "<group>"; };
-		3B471AB418C51BF6000AB6D5 /* bbSynchronizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bbSynchronizer.h; sourceTree = "<group>"; };
 		3B662CD418C6406B0087EAD5 /* synchronizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = synchronizer.cpp; sourceTree = "<group>"; };
 		3B662CD518C6406B0087EAD5 /* synchronizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = synchronizer.h; sourceTree = "<group>"; };
 		3B9DD29A18BCF709003EA4B9 /* Decision */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Decision; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -99,8 +96,6 @@
 				3B32E96718CA426300822708 /* syncPoint.cpp */,
 				3B32E96A18CA432900822708 /* syncHeader.cpp */,
 				3B32E96B18CA432900822708 /* syncHeader.h */,
-				3B471AB418C51BF6000AB6D5 /* bbSynchronizer.h */,
-				3B471AB318C51BF6000AB6D5 /* bbSynchronizer.cpp */,
 				3B407F8118C12F3800BA462F /* backBundle.h */,
 				3B407F8018C12F3800BA462F /* backBundle.cpp */,
 				3B407F8418C1366D00BA462F /* priorityPeer.h */,
@@ -171,7 +166,6 @@
 				3B2CA1FF18BFA9BA0033B57C /* peer.cpp in Sources */,
 				3B471AB218C4FC12000AB6D5 /* log.cpp in Sources */,
 				3B407F8218C12F3800BA462F /* backBundle.cpp in Sources */,
-				3B471AB518C51BF6000AB6D5 /* bbSynchronizer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

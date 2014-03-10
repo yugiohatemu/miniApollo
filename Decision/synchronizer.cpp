@@ -17,7 +17,7 @@
 #include "syncPoint.h"
 #include "syncHeader.h"
 
-const unsigned int BB_SIZE = 7;
+const unsigned int BB_SIZE = 13;
 
 Synchronizer::Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list,PriorityPeer * priority_peer):
     io_service(io_service),
@@ -87,7 +87,7 @@ void Synchronizer::broadcast(boost::system::error_code error){
     }
     //Active region 2nd
     for (unsigned int i = 0; i < peer_list.size(); i++) {
-        if (i != pid) peer_list[pid]->enqueue(boost::protect(boost::bind(&Synchronizer::sync, this, i)));
+        if (i != pid) peer_list[i]->enqueue(boost::protect(boost::bind(&Synchronizer::sync, peer_list[i]->synchronizer, pid)));
     }
     
     
@@ -122,6 +122,10 @@ void Synchronizer::search_good_peer(boost::system::error_code e){
 void Synchronizer::good_peer_first(){
     //create our BB bundle
     boost::mutex::scoped_lock lock(mutex);
+    if (se_list.size() - sync_region < BB_SIZE) {
+        BB_started = false;
+        return ;
+    }
     
     SyncHeader * sh = new SyncHeader(se_list, sync_region, BB_SIZE); // how do I fill in now?
     se_list.insert(se_list.begin() + sync_region,sh);
@@ -187,6 +191,7 @@ void Synchronizer::sync_header(BackBundle::Header header ){
     if (!found ) {
         se_list.insert(se_list.begin() + sync_region, new SyncHeader(header));
         sync_region++;
+        remove_empty_se();
         BB_started = true;
         Log::log().Print("Peer # %d get sync header\n",pid);
         peer_list[pid]->enqueue(boost::protect(boost::bind(&Peer::cancel_bully, peer_list[pid], error)));
