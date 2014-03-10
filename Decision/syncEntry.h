@@ -15,10 +15,11 @@ class SyncEntry{
 public:
     uint64_t ts;
     SyncEntry(){ ts = 0;};
+    SyncEntry(uint64_t ts):ts(ts){}
+    SyncEntry(const SyncEntry & se):ts(se.ts){}
+    bool operator== (const SyncEntry & se){ return ts == se.ts; }
+    bool operator< (const SyncEntry & se) const{return ts < se.ts;}
     virtual ~SyncEntry(){}
-    bool operator< (const SyncEntry & se) const{
-        return ts < se.ts;
-    }
 };
 
 #endif /* defined(__Decision__syncEntry__) */

@@ -15,6 +15,9 @@ class SyncPoint:public SyncEntry{
     
 public:
     SyncPoint();
+    SyncPoint(uint64_t ts);
+    SyncPoint(const SyncPoint & sp);
+    bool operator< (const SyncPoint & sp){ return ts< sp.ts; }
     ~SyncPoint();
 };
 

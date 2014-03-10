@@ -10,8 +10,8 @@
 #include <algorithm>
 #include "log.h"
 
-BackBundle::BackBundle(std::vector<uint64_t> & sync, unsigned int size): target(sync, size){
-    current = target;
+BackBundle::BackBundle(std::vector<uint64_t> sync, unsigned int size){
+//    current = target;
     bb_synced = true;
     ts_list.reserve(size);
     for (unsigned int i =0; i < size; i++) ts_list.push_back(sync[i]);
@@ -38,31 +38,31 @@ BackBundle::~BackBundle(){
 
 ////////////////////////
 
-void BackBundle::sync(BackBundle * bb){
-    
-    std::vector<uint64_t> other_list = bb->get_list();
-    if (ts_list.empty()) {
-//        Log::log().Print("Doing Copy\n");
-        for (unsigned int i =0; i < other_list.size(); i++) ts_list.push_back(other_list[i]);
-        
-    }else{
-//        Log::log().Print("Doing Merge\n");
-        for (unsigned int i = 0; i < other_list.size(); i++) {
-            if (!is_ts_in_bb(other_list[i]))ts_list.push_back(other_list[i]);
-        }
-        std::sort(ts_list.begin(), ts_list.end());
-    }
-    //Update them!!!
-    current = BackBundle::Header(ts_list);
-    
-    bb_synced = (target == current);
+//void BackBundle::sync(BackBundle * bb){
+
+//    std::vector<uint64_t> other_list = bb->get_list();
+//    if (ts_list.empty()) {
+////        Log::log().Print("Doing Copy\n");
+//        for (unsigned int i =0; i < other_list.size(); i++) ts_list.push_back(other_list[i]);
+//        
+//    }else{
+////        Log::log().Print("Doing Merge\n");
+//        for (unsigned int i = 0; i < other_list.size(); i++) {
+//            if (!is_ts_in_bb(other_list[i]))ts_list.push_back(other_list[i]);
+//        }
+//        std::sort(ts_list.begin(), ts_list.end());
+//    }
+//    //Update them!!!
+//    current = BackBundle::Header(ts_list);
+//    
+//    bb_synced = (target == current);
 //    Log::log().Print("C: %d %lld %lld - T: %d %lld %lld = %c\n",current.size,current.from,current.to, target.size,target.from,target.to, bb_synced ? 'y':'n');
 //    Log::log().Print("TS: %d %lld %lld \n",ts_list.size(), ts_list.front(),ts_list.back());
-}
+//}
 
-std::vector<uint64_t> BackBundle::get_list(){
-    return ts_list;
-}
+//std::vector<uint64_t> BackBundle::get_list(){
+//    return ts_list;
+//}
 
 unsigned int BackBundle::size(){
     return (int)ts_list.size();

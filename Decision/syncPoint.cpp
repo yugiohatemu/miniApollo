@@ -16,6 +16,15 @@ SyncPoint::SyncPoint():SyncEntry(){
     ts = tp.tv_sec * 1e6 + tp.tv_usec;
 }
 
+SyncPoint::SyncPoint(uint64_t ts):SyncEntry(ts){
+    
+}
+
+SyncPoint::SyncPoint(const SyncPoint & sp):SyncEntry(){
+    ts = sp.ts;
+}
+
+
 SyncPoint::~SyncPoint(){
     
 }

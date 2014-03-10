@@ -19,23 +19,20 @@ public:
         unsigned int size;
         uint64_t from, to;
         Header(std::vector<uint64_t> sync):size((unsigned int)sync.size()),from(sync.front()),to(sync.back()){}
-        Header(std::vector<uint64_t> sync, unsigned int size):size(size), from(sync.front()), to(sync[size-1]){}
+//        Header(std::vector<uint64_t> sync, unsigned int size):size(size), from(sync.front()), to(sync[size-1]){}
         Header():size(0), from(0), to(0){}
         Header(const Header & h):size(h.size), from(h.from), to(h.to){}
-        Header& operator=(const Header &h){
-            size = h.size; from = h.from; to = h.to;
-            return *this;
-        }
+        
+        Header& operator=(const Header &h){size = h.size; from = h.from; to = h.to;return *this;}
         bool operator== (const Header &h){return size == h.size && from == h.from && to == h.to;}
         bool operator!= (const Header &h){return !(*this==h);}
+        bool is_ts_in_header(uint64_t ts){return from <= ts && ts <=to;}
     };
     
-    BackBundle(std::vector<uint64_t> & sync, unsigned int size);
+    BackBundle(std::vector<uint64_t> sync, unsigned int size);
     BackBundle(Header &h);
     BackBundle(const BackBundle & b);
     ~BackBundle();
-    
-    std::vector<uint64_t> get_list();
 
     bool is_ts_in_bb(uint64_t ts);
     void add_ts(uint64_t ts);
@@ -47,7 +44,7 @@ public:
     bool is_bb_synced();
     void update_sync();
     unsigned int size();
-    void sync(BackBundle * bb);
+    
 private:
     
     std::vector<uint64_t> ts_list;

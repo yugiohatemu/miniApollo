@@ -52,7 +52,7 @@ void BB_Synchronizer::broadcast(boost::system::error_code error){
         for (unsigned int i = 0; i < peer_list.size(); i++) {
             if (i != pid){
                 for (unsigned int j = 0; j < bb_list.size(); j++) {
-                    peer_list[i]->enqueue(boost::protect(boost::bind(&BB_Synchronizer::sync, peer_list[i]->bb_synchronizer, Message(bb_list[j]->current,pid))));
+//                    peer_list[i]->enqueue(boost::protect(boost::bind(&BB_Synchronizer::sync, peer_list[i]->bb_synchronizer, Message(bb_list[j]->current,pid))));
                 }
             }
         }
@@ -85,12 +85,12 @@ void BB_Synchronizer::sync_bb(boost::system::error_code error){
             for (unsigned int j = 0; j < peer_list.size(); j++) {
                 if (pid != j) {
                     BackBundle * bb = bb_list[i];
-                    BackBundle * other_bb = peer_list[j]->bb_synchronizer->get_BB_with_header(bb->target);
-                    if (other_bb){
-                        boost::mutex::scoped_lock lock(mutex);
-                        bb->sync(other_bb);
-                        synchronizer->remove_dup(bb->get_list());
-                    }
+//                    BackBundle * other_bb = peer_list[j]->bb_synchronizer->get_BB_with_header(bb->target);
+//                    if (other_bb){
+//                        boost::mutex::scoped_lock lock(mutex);
+//                        bb->sync(other_bb);
+//                        synchronizer->remove_dup(bb->get_list());
+//                    }
                 }
                 if (bb_list[i]->is_bb_synced()) break;
             }
