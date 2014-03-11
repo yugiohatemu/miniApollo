@@ -14,6 +14,8 @@
 		3B407F8518C1366D00BA462F /* priorityPeer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B407F8318C1366D00BA462F /* priorityPeer.cpp */; };
 		3B422CBF18CF55C700EF33C9 /* AROObjectSynchronizer_C.c in Sources */ = {isa = PBXBuildFile; fileRef = 3B422CBB18CF55C700EF33C9 /* AROObjectSynchronizer_C.c */; };
 		3B422CC018CF55C700EF33C9 /* AROObjectSynchronizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B422CBD18CF55C700EF33C9 /* AROObjectSynchronizer.cpp */; };
+		3B422CC518CF62D100EF33C9 /* AROLog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B422CC318CF62D100EF33C9 /* AROLog.cpp */; };
+		3B422CC818CF62F900EF33C9 /* AROUtil_C.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B422CC618CF62F900EF33C9 /* AROUtil_C.cpp */; };
 		3B471AB218C4FC12000AB6D5 /* log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B471AB018C4FC12000AB6D5 /* log.cpp */; };
 		3B662CD618C6406B0087EAD5 /* synchronizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B662CD418C6406B0087EAD5 /* synchronizer.cpp */; };
 		3B9DD29E18BCF709003EA4B9 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B9DD29D18BCF709003EA4B9 /* main.cpp */; };
@@ -51,6 +53,12 @@
 		3B422CBD18CF55C700EF33C9 /* AROObjectSynchronizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AROObjectSynchronizer.cpp; sourceTree = "<group>"; };
 		3B422CBE18CF55C700EF33C9 /* AROObjectSynchronizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AROObjectSynchronizer.h; sourceTree = "<group>"; };
 		3B422CC118CF588100EF33C9 /* AROProtocols.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AROProtocols.h; sourceTree = "<group>"; };
+		3B422CC218CF62D100EF33C9 /* AROLog_C.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AROLog_C.h; sourceTree = "<group>"; };
+		3B422CC318CF62D100EF33C9 /* AROLog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AROLog.cpp; sourceTree = "<group>"; };
+		3B422CC418CF62D100EF33C9 /* AROLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AROLog.h; sourceTree = "<group>"; };
+		3B422CC618CF62F900EF33C9 /* AROUtil_C.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AROUtil_C.cpp; sourceTree = "<group>"; };
+		3B422CC718CF62F900EF33C9 /* AROUtil_C.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AROUtil_C.h; sourceTree = "<group>"; };
+		3B422CC918CF633200EF33C9 /* AROObjectCommonDefines_C.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AROObjectCommonDefines_C.h; sourceTree = "<group>"; };
 		3B471AB018C4FC12000AB6D5 /* log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = log.cpp; sourceTree = "<group>"; };
 		3B471AB118C4FC12000AB6D5 /* log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log.h; sourceTree = "<group>"; };
 		3B662CD418C6406B0087EAD5 /* synchronizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = synchronizer.cpp; sourceTree = "<group>"; };
@@ -73,6 +81,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3B422CCA18CF637200EF33C9 /* ARO */ = {
+			isa = PBXGroup;
+			children = (
+				3B422CC118CF588100EF33C9 /* AROProtocols.h */,
+				3B422CC918CF633200EF33C9 /* AROObjectCommonDefines_C.h */,
+				3B422CBB18CF55C700EF33C9 /* AROObjectSynchronizer_C.c */,
+				3B422CBC18CF55C700EF33C9 /* AROObjectSynchronizer_C.h */,
+				3B422CBE18CF55C700EF33C9 /* AROObjectSynchronizer.h */,
+				3B422CBD18CF55C700EF33C9 /* AROObjectSynchronizer.cpp */,
+				3B422CC718CF62F900EF33C9 /* AROUtil_C.h */,
+				3B422CC618CF62F900EF33C9 /* AROUtil_C.cpp */,
+				3B422CC218CF62D100EF33C9 /* AROLog_C.h */,
+				3B422CC318CF62D100EF33C9 /* AROLog.cpp */,
+				3B422CC418CF62D100EF33C9 /* AROLog.h */,
+			);
+			name = ARO;
+			sourceTree = "<group>";
+		};
 		3B9DD29118BCF709003EA4B9 = {
 			isa = PBXGroup;
 			children = (
@@ -93,11 +119,7 @@
 		3B9DD29C18BCF709003EA4B9 /* Decision */ = {
 			isa = PBXGroup;
 			children = (
-				3B422CBB18CF55C700EF33C9 /* AROObjectSynchronizer_C.c */,
-				3B422CBC18CF55C700EF33C9 /* AROObjectSynchronizer_C.h */,
-				3B422CBD18CF55C700EF33C9 /* AROObjectSynchronizer.cpp */,
-				3B422CBE18CF55C700EF33C9 /* AROObjectSynchronizer.h */,
-				3B422CC118CF588100EF33C9 /* AROProtocols.h */,
+				3B422CCA18CF637200EF33C9 /* ARO */,
 				3B9DD29D18BCF709003EA4B9 /* main.cpp */,
 				3B2CA1FE18BFA9BA0033B57C /* peer.h */,
 				3B2CA1FD18BFA9BA0033B57C /* peer.cpp */,
@@ -178,8 +200,10 @@
 				3B662CD618C6406B0087EAD5 /* synchronizer.cpp in Sources */,
 				3B422CBF18CF55C700EF33C9 /* AROObjectSynchronizer_C.c in Sources */,
 				3B2CA1FF18BFA9BA0033B57C /* peer.cpp in Sources */,
+				3B422CC818CF62F900EF33C9 /* AROUtil_C.cpp in Sources */,
 				3B471AB218C4FC12000AB6D5 /* log.cpp in Sources */,
 				3B407F8218C12F3800BA462F /* backBundle.cpp in Sources */,
+				3B422CC518CF62D100EF33C9 /* AROLog.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
