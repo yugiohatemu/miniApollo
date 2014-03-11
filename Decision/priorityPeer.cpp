@@ -17,18 +17,16 @@ PriorityPeer::PriorityPeer(){
 
 PriorityPeer::~PriorityPeer(){
     Log::log().Print("Total syncs item %d\n", ts_list.size());
-    for (unsigned int i = 0; i < bb_list.size(); i++) {
-        delete bb_list[i];
+    for (unsigned int i = 0; i < sh_list.size(); i++) {
+        delete sh_list[i];
     }
 }
 void PriorityPeer::add_ts(uint64_t ts){
-//    boost::mutex::scoped_lock scoped_lock(mutex);
     ts_list.push_back(ts);
 }
 
 //ask for BB copy
-void PriorityPeer::add_bb(BackBundle * bb){
-    boost::mutex::scoped_lock scoped_lock(mutex);
-    //make a copy of BB
-    bb_list.push_back(new BackBundle(*bb));
+void PriorityPeer::add_sh(SyncHeader * sh){
+    sh_list.push_back(new SyncHeader(*sh));
 }
+

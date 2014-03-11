@@ -11,14 +11,14 @@
 
 #include "syncEntry.h"
 
-class SyncPoint:public SyncEntry{
+class SyncP:public SyncEntry{
     
 public:
-    SyncPoint();
-    SyncPoint(uint64_t ts);
-    SyncPoint(const SyncPoint & sp);
-    bool operator< (const SyncPoint & sp){ return ts< sp.ts; }
-    ~SyncPoint();
+    SyncP();
+    SyncP(uint64_t ts);
+    SyncP(const SyncP & sp);
+    bool operator< (const SyncP & sp){ return ts< sp.ts; }
+    ~SyncP();
 };
 
 #endif /* defined(__Decision__syncPoint__) */

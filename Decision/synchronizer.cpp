@@ -14,7 +14,7 @@
 #include <boost/bind/protect.hpp>
 #include <algorithm>
 
-#include "syncPoint.h"
+#include "syncP.h"
 #include "syncHeader.h"
 
 const unsigned int BB_SIZE = 13;
@@ -49,7 +49,7 @@ Synchronizer::~Synchronizer(){
 void Synchronizer::stop(){
     t_clean_up.cancel();
     t_broadcast.cancel();
-    
+
     BB_started = false;
 }
 
@@ -123,12 +123,13 @@ void Synchronizer::good_peer_first(){
     //create our BB bundle
     boost::mutex::scoped_lock lock(mutex);
     if (se_list.size() - sync_region < BB_SIZE) {
-        BB_started = false;
+        BB_started = false; //TODO: fix this? Warning
         return ;
     }
     
     SyncHeader * sh = new SyncHeader(se_list, sync_region, BB_SIZE); // how do I fill in now?
     se_list.insert(se_list.begin() + sync_region,sh);
+    priority_peer->add_sh(sh);
     sync_region++;
     
     remove_empty_se();
@@ -172,7 +173,7 @@ void Synchronizer::sync(unsigned int peer_id){
         for (unsigned int i = peer_sync_region; i < peer_sp_list.size(); i++) {
             uint64_t ts = peer_sp_list[i]->ts;
             if (!has_ts(ts)) {
-                se_list.insert(se_list.begin() + find_insert_pos(ts), new SyncPoint(ts));
+                se_list.insert(se_list.begin() + find_insert_pos(ts), new SyncP(ts));
             }
         }
     }
@@ -201,7 +202,7 @@ void Synchronizer::sync_header(BackBundle::Header header ){
 void Synchronizer::add_new_se(){
     boost::mutex::scoped_lock lock(mutex);
     boost::this_thread::sleep(boost::posix_time::seconds(1));
-    se_list.push_back(new SyncPoint());
+    se_list.push_back(new SyncP());
     priority_peer->add_ts(se_list.back()->ts);
 }
 

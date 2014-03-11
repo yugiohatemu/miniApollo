@@ -8,10 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		3B2CA1FF18BFA9BA0033B57C /* peer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B2CA1FD18BFA9BA0033B57C /* peer.cpp */; };
-		3B32E96918CA426300822708 /* syncPoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B32E96718CA426300822708 /* syncPoint.cpp */; };
+		3B32E96918CA426300822708 /* syncP.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B32E96718CA426300822708 /* syncP.cpp */; };
 		3B32E96C18CA432900822708 /* syncHeader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B32E96A18CA432900822708 /* syncHeader.cpp */; };
 		3B407F8218C12F3800BA462F /* backBundle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B407F8018C12F3800BA462F /* backBundle.cpp */; };
 		3B407F8518C1366D00BA462F /* priorityPeer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B407F8318C1366D00BA462F /* priorityPeer.cpp */; };
+		3B422CBF18CF55C700EF33C9 /* AROObjectSynchronizer_C.c in Sources */ = {isa = PBXBuildFile; fileRef = 3B422CBB18CF55C700EF33C9 /* AROObjectSynchronizer_C.c */; };
+		3B422CC018CF55C700EF33C9 /* AROObjectSynchronizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B422CBD18CF55C700EF33C9 /* AROObjectSynchronizer.cpp */; };
 		3B471AB218C4FC12000AB6D5 /* log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B471AB018C4FC12000AB6D5 /* log.cpp */; };
 		3B662CD618C6406B0087EAD5 /* synchronizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B662CD418C6406B0087EAD5 /* synchronizer.cpp */; };
 		3B9DD29E18BCF709003EA4B9 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B9DD29D18BCF709003EA4B9 /* main.cpp */; };
@@ -36,14 +38,19 @@
 		3B2CA1FD18BFA9BA0033B57C /* peer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peer.cpp; sourceTree = "<group>"; };
 		3B2CA1FE18BFA9BA0033B57C /* peer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peer.h; sourceTree = "<group>"; };
 		3B32E96518CA421400822708 /* syncEntry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = syncEntry.h; sourceTree = "<group>"; };
-		3B32E96718CA426300822708 /* syncPoint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = syncPoint.cpp; sourceTree = "<group>"; };
-		3B32E96818CA426300822708 /* syncPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = syncPoint.h; sourceTree = "<group>"; };
+		3B32E96718CA426300822708 /* syncP.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = syncP.cpp; sourceTree = "<group>"; };
+		3B32E96818CA426300822708 /* syncP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = syncP.h; sourceTree = "<group>"; };
 		3B32E96A18CA432900822708 /* syncHeader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = syncHeader.cpp; sourceTree = "<group>"; };
 		3B32E96B18CA432900822708 /* syncHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = syncHeader.h; sourceTree = "<group>"; };
 		3B407F8018C12F3800BA462F /* backBundle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = backBundle.cpp; sourceTree = "<group>"; };
 		3B407F8118C12F3800BA462F /* backBundle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = backBundle.h; sourceTree = "<group>"; };
 		3B407F8318C1366D00BA462F /* priorityPeer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = priorityPeer.cpp; sourceTree = "<group>"; };
 		3B407F8418C1366D00BA462F /* priorityPeer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = priorityPeer.h; sourceTree = "<group>"; };
+		3B422CBB18CF55C700EF33C9 /* AROObjectSynchronizer_C.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = AROObjectSynchronizer_C.c; sourceTree = "<group>"; };
+		3B422CBC18CF55C700EF33C9 /* AROObjectSynchronizer_C.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AROObjectSynchronizer_C.h; sourceTree = "<group>"; };
+		3B422CBD18CF55C700EF33C9 /* AROObjectSynchronizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AROObjectSynchronizer.cpp; sourceTree = "<group>"; };
+		3B422CBE18CF55C700EF33C9 /* AROObjectSynchronizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AROObjectSynchronizer.h; sourceTree = "<group>"; };
+		3B422CC118CF588100EF33C9 /* AROProtocols.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AROProtocols.h; sourceTree = "<group>"; };
 		3B471AB018C4FC12000AB6D5 /* log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = log.cpp; sourceTree = "<group>"; };
 		3B471AB118C4FC12000AB6D5 /* log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log.h; sourceTree = "<group>"; };
 		3B662CD418C6406B0087EAD5 /* synchronizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = synchronizer.cpp; sourceTree = "<group>"; };
@@ -86,14 +93,19 @@
 		3B9DD29C18BCF709003EA4B9 /* Decision */ = {
 			isa = PBXGroup;
 			children = (
+				3B422CBB18CF55C700EF33C9 /* AROObjectSynchronizer_C.c */,
+				3B422CBC18CF55C700EF33C9 /* AROObjectSynchronizer_C.h */,
+				3B422CBD18CF55C700EF33C9 /* AROObjectSynchronizer.cpp */,
+				3B422CBE18CF55C700EF33C9 /* AROObjectSynchronizer.h */,
+				3B422CC118CF588100EF33C9 /* AROProtocols.h */,
 				3B9DD29D18BCF709003EA4B9 /* main.cpp */,
 				3B2CA1FE18BFA9BA0033B57C /* peer.h */,
 				3B2CA1FD18BFA9BA0033B57C /* peer.cpp */,
 				3B662CD518C6406B0087EAD5 /* synchronizer.h */,
 				3B662CD418C6406B0087EAD5 /* synchronizer.cpp */,
 				3B32E96518CA421400822708 /* syncEntry.h */,
-				3B32E96818CA426300822708 /* syncPoint.h */,
-				3B32E96718CA426300822708 /* syncPoint.cpp */,
+				3B32E96818CA426300822708 /* syncP.h */,
+				3B32E96718CA426300822708 /* syncP.cpp */,
 				3B32E96A18CA432900822708 /* syncHeader.cpp */,
 				3B32E96B18CA432900822708 /* syncHeader.h */,
 				3B407F8118C12F3800BA462F /* backBundle.h */,
@@ -158,11 +170,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3B32E96918CA426300822708 /* syncPoint.cpp in Sources */,
+				3B32E96918CA426300822708 /* syncP.cpp in Sources */,
 				3B9DD29E18BCF709003EA4B9 /* main.cpp in Sources */,
 				3B407F8518C1366D00BA462F /* priorityPeer.cpp in Sources */,
+				3B422CC018CF55C700EF33C9 /* AROObjectSynchronizer.cpp in Sources */,
 				3B32E96C18CA432900822708 /* syncHeader.cpp in Sources */,
 				3B662CD618C6406B0087EAD5 /* synchronizer.cpp in Sources */,
+				3B422CBF18CF55C700EF33C9 /* AROObjectSynchronizer_C.c in Sources */,
 				3B2CA1FF18BFA9BA0033B57C /* peer.cpp in Sources */,
 				3B471AB218C4FC12000AB6D5 /* log.cpp in Sources */,
 				3B407F8218C12F3800BA462F /* backBundle.cpp in Sources */,

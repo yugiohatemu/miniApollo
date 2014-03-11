@@ -40,7 +40,7 @@ class Synchronizer{
     void broadcast(boost::system::error_code );
     
     bool BB_started;
-    
+    unsigned int sync_region = 0;
     PriorityPeer * priority_peer;
 public:
     Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
@@ -50,6 +50,8 @@ public:
     unsigned int get_sync_region();
     SyncHeader* get_sync_header_with(BackBundle::Header header);
 
+//    void sync_up_with_pp(); if no body is online, sync up with pp?
+    
     void stop();
     void start();
     void add_new_se();
@@ -57,12 +59,10 @@ public:
     
     void sync(unsigned int peer_id);
     void sync_header(BackBundle::Header header);
-//    void sync_header(unsigned int peer_id);
-//    void sync_self();
-    unsigned int sync_region = 0;
-    
+
     void search_good_peer(boost::system::error_code error);
     void good_peer_first();
+    
     void remove_empty_se();
    
     bool has_ts(uint64_t ts);

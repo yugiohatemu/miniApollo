@@ -12,23 +12,21 @@
 #include <vector>
 #include <boost/thread/mutex.hpp>
 #include <inttypes.h>
-#include "backBundle.h"
+#include "syncHeader.h"
 
 //Acts as a Priority peer so that it is always on line to keep all data
 //Technically it is an instance
 
 class PriorityPeer{
     std::vector<uint64_t> ts_list;
-    std::vector<BackBundle *> bb_list;
+    std::vector<SyncHeader *> sh_list;
     boost::mutex mutex;
 public:
     PriorityPeer();
     ~PriorityPeer();
     void add_ts(uint64_t ts);
-    void add_bb(BackBundle * bb);
-    //sign up????
-    //if no body is online
-    //ask for update from PriorityPeer
+    void add_sh(SyncHeader * sh);
+    
 };
 
 #endif /* defined(__Decision__dataPool__) */
