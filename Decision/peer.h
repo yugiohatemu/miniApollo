@@ -10,8 +10,7 @@
 #define __Decision__peer__
 
 #include "priorityPeer.h"
-//#include "bbSynchronizer.h"
-#include "synchronizer.h"
+#include "actionList.h"
 
 class Peer{
     struct Message{
@@ -32,7 +31,7 @@ public:
     
     void get_bullyed(Message m);
 
-    Synchronizer * synchronizer;
+    ActionList * action_list;
 //    BB_Synchronizer * bb_synchronizer;
     boost::asio::io_service io_service;
     boost::system::error_code error;

@@ -9,14 +9,14 @@
 #include "priorityPeer.h"
 #include <stdlib.h>
 #include <iostream>
-#include "log.h"
+#include "AROLog.h"
 
 PriorityPeer::PriorityPeer(){
     ts_list.reserve(50);
 }
 
 PriorityPeer::~PriorityPeer(){
-    Log::log().Print("Total syncs item %d\n", ts_list.size());
+    AROLog::Log().Print(logINFO, 1, "PP", "Total syncs item %d\n", ts_list.size());
     for (unsigned int i = 0; i < sh_list.size(); i++) {
         delete sh_list[i];
     }

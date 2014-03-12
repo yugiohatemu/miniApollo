@@ -23,24 +23,11 @@
 #endif
 
 boost::mutex log_stream_lock;
-AROLog* AROLog::m_pInstance = NULL;
 
-AROLog::AROLog() {
-    fp = NULL;
-    current_level = logERROR;
-}
-
-AROLog::~AROLog() {
-}
-
-AROLog* AROLog::Log()
+AROLog& AROLog::Log()
 {
-    if (!m_pInstance) {  // Only allow one instance of class to be generated.
-        m_pInstance = new AROLog;
-#if defined(__ANDROID__)
-        __android_log_print(ANDROID_LOG_DEBUG, "AROLog", "init");
-#endif
-    } return m_pInstance;
+    static AROLog m_pInstance;
+    return m_pInstance;
 }
 
 void AROLog::OpenLog(std::string path, std::string filename) {
@@ -174,7 +161,7 @@ void AROLog_Print(int level, int timed, const char *tag, const char *format, ...
 #ifndef PRODUCTION
     va_list args;
     va_start(args, format);
-    AROLog::Log()->vPrint(level, timed, tag, format, args);
+    AROLog::Log().vPrint(level, timed, tag, format, args);
     va_end(args);
 #endif
 }

@@ -14,14 +14,16 @@
 #include <boost/thread/mutex.hpp>
 #include <inttypes.h>
 #include <vector>
-#include "syncHeader.h"
+
 #include "backBundle.h"
 #include "priorityPeer.h"
 //need to keep a link to the backbundle synchronizer
-
+#include "action_C.h"
+#include "AROObjectSynchronizer.h"
+#include "AROProtocols.h"
 class Peer;
 
-class Synchronizer{
+class ActionList:public AROSyncResponder{
 
     unsigned int pid;
     
@@ -32,8 +34,8 @@ class Synchronizer{
     boost::asio::deadline_timer t_broadcast;
     boost::asio::deadline_timer t_clean_up;
     
-    std::vector<SyncEntry *> se_list;
-    std::vector<Peer *> &peer_list;
+    Action_C * ac_list;
+    std::vector<Peer *> &peer_list; //connection_pool in fact
     
     boost::mutex mutex;
 
@@ -43,31 +45,24 @@ class Synchronizer{
     unsigned int sync_region = 0;
     PriorityPeer * priority_peer;
 public:
-    Synchronizer(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
-    ~Synchronizer();
+    ActionList(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
+    ~ActionList();
    
-    std::vector<SyncEntry *>& get_se_list();
-    unsigned int get_sync_region();
-    SyncHeader* get_sync_header_with(BackBundle::Header header);
-
-//    void sync_up_with_pp(); if no body is online, sync up with pp?
     
+    AROObjectSynchronizer * synchronizer;
+    unsigned int count;
     void stop();
     void start();
-    void add_new_se();
-    void add_new_header(BackBundle::Header header);
-    
-    void sync(unsigned int peer_id);
-    void sync_header(BackBundle::Header header);
+    void add_new_action();
 
+    void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
+    void notificationOfSyncAchieved(double networkPeriod, void *sender);
+    void periodicSync_(const boost::system::error_code &error);
+    void processSyncPoint_(SyncPoint msgSyncPoint);
+    
     void search_good_peer(boost::system::error_code error);
     void good_peer_first();
     
-    void remove_empty_se();
-   
-    bool has_ts(uint64_t ts);
-    unsigned int find_insert_pos(uint64_t ts);
-    
-};
 
+};
 #endif /* defined(__Decision__synchronizer__) */

@@ -8,7 +8,7 @@
 
 #include "backBundle.h"
 #include <algorithm>
-#include "log.h"
+//#include "log.h"
 
 BackBundle::BackBundle(std::vector<uint64_t> sync, unsigned int size){
 //    current = target;
@@ -30,10 +30,10 @@ BackBundle::BackBundle(const BackBundle & b){
 }
 
 BackBundle::~BackBundle(){
-    if (ts_list.empty()) {
-        Log::log().Print("BB empty with header %d %lld - %lld\n", target.size, target.from,target.to);
-    }else
-        Log::log().Print("BB size: %d %lld - %lld, synced: %c\n", ts_list.size(), ts_list.front(),ts_list.back(), (bb_synced || target == current ) ? 'Y':'N');
+//    if (ts_list.empty()) {
+//        Log::log().Print("BB empty with header %d %lld - %lld\n", target.size, target.from,target.to);
+//    }else
+//        Log::log().Print("BB size: %d %lld - %lld, synced: %c\n", ts_list.size(), ts_list.front(),ts_list.back(), (bb_synced || target == current ) ? 'Y':'N');
 }
 
 ////////////////////////

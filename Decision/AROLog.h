@@ -24,14 +24,12 @@ private:
     FILE *fp;
     enum LogLevel current_level;
 
-    AROLog();
-    ~AROLog();
-    AROLog(AROLog const&){};             // copy constructor is private
-//    AROLog& operator=(AROLog const&){};  // assignment operator is private
-    static AROLog* m_pInstance;
+    AROLog(){};
+    ~AROLog(){};
+    AROLog(AROLog const&){};
     
 public:
-    static AROLog* Log();
+    static AROLog& Log();
 
     void OpenLog(std::string path, std::string log_name);
     void CloseLog();
