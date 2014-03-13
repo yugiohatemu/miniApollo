@@ -31,15 +31,13 @@ class ActionList:public AROSyncResponder{
     boost::asio::io_service &io_service;
     boost::asio::io_service::strand &strand;
     
-    boost::asio::deadline_timer t_broadcast;
+    boost::asio::deadline_timer t_sync;
     boost::asio::deadline_timer t_clean_up;
     
     Action_C * ac_list;
     std::vector<Peer *> &peer_list; //connection_pool in fact
     
     boost::mutex mutex;
-
-    void broadcast(boost::system::error_code );
     
     bool BB_started;
     unsigned int sync_region = 0;
@@ -51,14 +49,18 @@ public:
     
     AROObjectSynchronizer * synchronizer;
     unsigned int count;
-    void stop();
-    void start();
+    void pause();
+    void resume();
+    void broadcast(SyncPoint p ); //this is actually periodic sync?
     void add_new_action();
+    void processAppDirective(SyncPoint p, bool flag);
+    void periodicSync(const boost::system::error_code &error);
+    void processSyncPoint(SyncPoint msgSyncPoint);
+    void mergeAction(SyncPoint p); //or actionList??
 
     void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
     void notificationOfSyncAchieved(double networkPeriod, void *sender);
-    void periodicSync_(const boost::system::error_code &error);
-    void processSyncPoint_(SyncPoint msgSyncPoint);
+  
     
     void search_good_peer(boost::system::error_code error);
     void good_peer_first();

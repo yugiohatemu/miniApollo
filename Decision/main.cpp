@@ -4,7 +4,7 @@
 #include "AROLog.h"
 
 int main( int argc, char * argv[] ){
-    
+    AROLog::Log().SetLogLevel(logINFO);
 
     PriorityPeer * priority_peer = new PriorityPeer();
     std::vector<Peer * > peer_list;
@@ -14,7 +14,7 @@ int main( int argc, char * argv[] ){
     }
 
     //ask others to get what?
-    AROLog::Log().SetLogLevel(logDEBUG);
+    
     
     while(std::cin.get()!= 'q'){}
    
@@ -22,6 +22,5 @@ int main( int argc, char * argv[] ){
         delete peer_list[i];
     }
     delete priority_peer;
-    
-	return 0;
+    return 0;
 }

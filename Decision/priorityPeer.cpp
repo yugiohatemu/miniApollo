@@ -17,16 +17,16 @@ PriorityPeer::PriorityPeer(){
 
 PriorityPeer::~PriorityPeer(){
     AROLog::Log().Print(logINFO, 1, "PP", "Total syncs item %d\n", ts_list.size());
-    for (unsigned int i = 0; i < sh_list.size(); i++) {
-        delete sh_list[i];
-    }
+//    for (unsigned int i = 0; i < sh_list.size(); i++) {
+//        delete sh_list[i];
+//    }
 }
 void PriorityPeer::add_ts(uint64_t ts){
     ts_list.push_back(ts);
 }
 
 //ask for BB copy
-void PriorityPeer::add_sh(SyncHeader * sh){
-    sh_list.push_back(new SyncHeader(*sh));
-}
+//void PriorityPeer::add_sh(SyncHeader * sh){
+//    sh_list.push_back(new SyncHeader(*sh));
+//}
 

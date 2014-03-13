@@ -16,6 +16,7 @@ extern "C" {
     
 typedef struct Action_S {
     uint64_t ts;
+    uint32_t hash;
     //also a pointer to the header in the future
 } __attribute__((aligned(8))) Action_C;
 

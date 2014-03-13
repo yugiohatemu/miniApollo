@@ -119,7 +119,7 @@ void AROLog::vPrint(int level, int timed, const char *tag, const char *format, v
 #else
 
     if (!fp) {
-        fprintf(stderr, "Please open log file before printing log messages.\n");
+//        fprintf(stderr, "Please open log file before printing log messages.\n");
         //va_start(args, format);
         vfprintf(stdout, format, args);
         //va_end(args);

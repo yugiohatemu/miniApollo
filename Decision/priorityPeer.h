@@ -12,20 +12,19 @@
 #include <vector>
 #include <boost/thread/mutex.hpp>
 #include <inttypes.h>
-#include "syncHeader.h"
 
 //Acts as a Priority peer so that it is always on line to keep all data
 //Technically it is an instance
 
 class PriorityPeer{
     std::vector<uint64_t> ts_list;
-    std::vector<SyncHeader *> sh_list;
+//    std::vector<SyncHeader *> sh_list;
     boost::mutex mutex;
 public:
     PriorityPeer();
     ~PriorityPeer();
     void add_ts(uint64_t ts);
-    void add_sh(SyncHeader * sh);
+//    void add_sh(SyncHeader * sh);
     
 };
 

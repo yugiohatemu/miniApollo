@@ -108,12 +108,12 @@ void AROObjectSynchronizerInf_free(AROObjectSynchronizerInf *op) {
 #if AROObjectSynchronizer_C_debugVerbosity >= 1
 	if (op->debugLabel != NULL) { AOc_free(op->debugLabel); op->debugLabel = NULL; }
 #endif
-    AROLog_Print(logDEBUG4,0,"Sync_C","FREEA - %d\n", ugetmalloccounter());
+//    AROLog_Print(logDEBUG4,0,"Sync_C","FREEA - %d\n", ugetmalloccounter());
     if (op->syncPoints != NULL)
         AOc_free(op->syncPoints);
-    AROLog_Print(logDEBUG4,0,"Sync_C","FREEB - %d\n", ugetmalloccounter());
+//    AROLog_Print(logDEBUG4,0,"Sync_C","FREEB - %d\n", ugetmalloccounter());
     AOc_free(op);
-    AROLog_Print(logDEBUG4,0,"Sync_C","FREEC - %d\n", ugetmalloccounter());
+//    AROLog_Print(logDEBUG4,0,"Sync_C","FREEC - %d\n", ugetmalloccounter());
 }
 
 void AROObjectSynchronizerInf_setDebugInfo(AROObjectSynchronizerInf *op, int debugLevel_, const char *debugLabel_) {
