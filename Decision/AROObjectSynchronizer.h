@@ -52,6 +52,7 @@ public:
 	void setSyncIDArrays(uint64_t *syncIDhead, uint32_t *syncHashhead, int stride);
 	void getGlobalSyncPoint(SyncPoint *syncPoint, int numts);
 	void processSyncState(uint64_t *syncIDhead, uint32_t *syncHashhead, int stride, int numts);
+	double getSynchronizerProgress(int numts, double *localToGlobal_, double *globalToNetwork_);
 
 	void notifyOfSyncPoint(SyncPoint *syncPoint);
 	//void notifyOfUpdatedSyncID(uint64_t syncID);

@@ -51,7 +51,6 @@ public:
     unsigned int count;
     void pause();
     void resume();
-    void broadcast(SyncPoint p ); //this is actually periodic sync?
     void add_new_action();
     void processAppDirective(SyncPoint p, bool flag);
     void periodicSync(const boost::system::error_code &error);
@@ -59,7 +58,7 @@ public:
     void mergeAction(SyncPoint p); //or actionList??
 
     void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
-    void notificationOfSyncAchieved(double networkPeriod, void *sender);
+    void notificationOfSyncAchieved(double networkPeriod, int code, void *sender);
   
     
     void search_good_peer(boost::system::error_code error);

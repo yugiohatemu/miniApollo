@@ -45,7 +45,7 @@ public:
 class AROSyncResponder {
 public:
 	virtual void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender) = 0;
-	virtual void notificationOfSyncAchieved(double networkPeriod, void *sender) = 0;
+	virtual void notificationOfSyncAchieved(double networkPeriod, int code, void *sender) = 0;
 };
 
 #endif

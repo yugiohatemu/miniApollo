@@ -27,6 +27,8 @@ Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,PriorityPeer * priori
     t_being_bully(io_service, boost::posix_time::seconds(0))
 {
         //Init timers for that
+    srand(time(NULL));
+
     availability =  (float)(rand() % 10 + 1) / 10;
     if(availability < 0.8) availability = 0.8;
     
@@ -38,18 +40,16 @@ Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,PriorityPeer * priori
     
     AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d init with availability %f\n",pid,availability);
     
-    srand(time(NULL));
     
 
     io_service.post(boost::bind(&Peer::get_online, this));
-    enqueue(boost::protect(boost::bind(&Peer::new_feed,this,error)));
+//    enqueue(boost::protect(boost::bind(&Peer::new_feed,this,error)));
 }
 
 Peer::~Peer(){
     io_service.stop();
     //cancel all the tasks
     cancel_all();
-    action_list->pause();
 
     thread_group.join_all();
     
@@ -59,7 +59,7 @@ Peer::~Peer(){
 
 void Peer::cancel_all(){
     online = false;
-    action_list->resume();
+    action_list->pause();
     
     t_bully_other.cancel();
     t_being_bully.cancel();
@@ -73,7 +73,7 @@ void Peer::cancel_all(){
 void Peer::get_offline(){
     cancel_all();
     
-    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d get offline\n",pid);
+//    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d get offline\n",pid);
     
     t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 30 *(1-availability) + rand() % 10));
     t_on_off_line.async_wait(strand.wrap(boost::bind(&Peer::get_online,this)));
@@ -86,10 +86,10 @@ void Peer::get_online(){
     
     action_list->resume();
     
-//    t_new_feed.expires_from_now(boost::posix_time::seconds(rand() % 6 + 5));
-//    t_new_feed.async_wait(strand.wrap(boost::bind(&Peer::new_feed,this,boost::asio::placeholders::error)));
+    t_new_feed.expires_from_now(boost::posix_time::seconds(rand() % 6 + 5));
+    t_new_feed.async_wait(strand.wrap(boost::bind(&Peer::new_feed,this,boost::asio::placeholders::error)));
     
-    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d get online\n",pid);
+//    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d get online\n",pid);
     
     t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 20 * availability + rand() % 5));
     t_on_off_line.async_wait(boost::bind(&Peer::get_offline,this));
@@ -105,8 +105,8 @@ void Peer::new_feed(const boost::system::error_code &e){
   
     action_list->add_new_action();
     
-//    t_new_feed.expires_from_now(boost::posix_time::seconds(rand() % 6 + 5));
-//    t_new_feed.async_wait(strand.wrap(boost::bind(&Peer::new_feed,this, boost::asio::placeholders::error)));
+    t_new_feed.expires_from_now(boost::posix_time::seconds(rand() % 6 + 5));
+    t_new_feed.async_wait(strand.wrap(boost::bind(&Peer::new_feed,this, boost::asio::placeholders::error)));
     
 }
 

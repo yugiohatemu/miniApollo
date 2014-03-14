@@ -22,7 +22,7 @@ int AROObjectSynchronizerInf_findIDForTimestamp(uint64_t searchts, int num_syncp
 	if ((searchts > *(ts+(numts-1)*stride)) && (searchts > syncpoints[num_syncpoints].ts1))
 		return (numts+1 > syncpoints[num_syncpoints].id1) ? numts+1 : syncpoints[num_syncpoints].id1;
 
-#if AROObjectSynchronizer_C_debugVerbosity >= 1
+#if AROObjectSynchronizer_C_debugVerbosity >= 2
 //	int debugLevel = syncState->debugLevel; 
 //	const char *debugLabel = (syncState->debugLabel == NULL) ? "Sync_C" : syncState->debugLabel;
 	int debugLevel = 1; const char *debugLabel = "Sync_C";
@@ -245,7 +245,7 @@ if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"\t--chksypts4 i: %d - 
 		}
 		if (lastloc >= 0) {
 #if AROObjectSynchronizer_C_debugVerbosity >= 1
-if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"\t--chksypts5 i: %d - %d %08x %d %d %lld %lld\n", i, sypts[i].hash, sypts[i].res, sypts[i].id1, sypts[i].id2, (long long int)sypts[i].ts1, (long long int)sypts[i].ts2);
+if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"\t--chksypts5 i: %d - %d %08x %d %d %lld %lld\n", i, sypts[i].res, sypts[i].hash, sypts[i].id1, sypts[i].id2, (long long int)sypts[i].ts1, (long long int)sypts[i].ts2);
 			if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"\tbr-3 the previous one we had in our list was %d at %d\n", lastbnd, lastloc);
 			if ((newbnd + newoff - lastbnd) > (sypts[i].id1 - sypts[lastloc].id1))
 				if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"\tupdating pt_span %d : bnd %d loc %d : (%d %lld) (%d %lld) : %d %d %lld %lld --> %d %d %lld %lld\n", 
@@ -391,7 +391,7 @@ int AROObjectSynchronizerInf_processSyncPoint(AROObjectSynchronizerInf *syncStat
 #endif
 
 #if AROObjectSynchronizer_C_debugVerbosity >= 2
-	if (debugLevel >= 2) AROLog_Print(logDEBUG4,0,debugLabel,"----------------- sync points at start -----------------\n");
+	if (debugLevel >= 2) AROLog_Print(logDEBUG4,0,debugLabel,"----------------- sync_C points at start -----------------\n");
 	for (i = 0; i <= syncState->numSyncPoints; i++)
 		if (debugLevel >= 2) AROLog_Print(logDEBUG4,0,debugLabel,"\t%d : %d %d %lld %lld\n", i, syncState->syncPoints[i].id1, syncState->syncPoints[i].id2, (long long int)syncState->syncPoints[i].ts1, (long long int)syncState->syncPoints[i].ts2);
 	if (debugLevel >= 2) AROLog_Print(logDEBUG4,0,debugLabel,"--------------------------------------------------------\n");
@@ -488,6 +488,20 @@ int AROObjectSynchronizerInf_processSyncPoint(AROObjectSynchronizerInf *syncStat
 			num_newsyncpoints++;
 		}
 	}		
+		
+	if (syncState->syncPoints[0].id1 != 1) {
+#if AROObjectSynchronizer_C_debugVerbosity >= 1
+		if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"Start of global picture is floating: %d %lld over %d\n", 
+			syncState->syncPoints[0].id1, (long long int)(syncState->syncPoints[0].ts1), syncState->numSyncPoints);
+#endif
+		newsyncpoints[num_newsyncpoints].res = syncState->localRes;
+		newsyncpoints[num_newsyncpoints].hash = 0x0;
+		newsyncpoints[num_newsyncpoints].id1 = 1;
+		newsyncpoints[num_newsyncpoints].id2 = syncState->syncPoints[0].id1;
+		newsyncpoints[num_newsyncpoints].ts1 = 
+			newsyncpoints[num_newsyncpoints].ts2 = syncState->syncPoints[0].ts1;
+		num_newsyncpoints++;
+	}
 		
 #if AROObjectSynchronizer_C_debugVerbosity >= 1
 	if (rqhi < rqlo) { if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"rq %d : %lld\n", numreq, (long long int)tsreq[numreq-1]); }
@@ -752,7 +766,7 @@ void AROObjectSynchronizerInf_resolveLocalAlignment(
 //	AROLog_Print(logDEBUG4,0,"Sync_C","Sweeping %d syncpoints to update before checking local alignment\n", syncState->numSyncPoints);
 #endif
 //	AROObjectSynchronizerInf_sweepToAnchor(syncState, ts, numts, stride, tsreq, &numreq);
-	
+		
 	int i, j, gid1, gid2, lid1 = -1, lid2 = -1;
 	for (i = 0; i <= syncState->numSyncPoints; i++) { 
 		int lo, hi;

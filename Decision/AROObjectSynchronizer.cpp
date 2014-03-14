@@ -73,7 +73,7 @@ void AROObjectSynchronizer::getGlobalSyncPoint(SyncPoint *syncPoint, int numts) 
 
 void AROObjectSynchronizer::processSyncState(uint64_t *syncIDhead, uint32_t *syncHashhead, int stride, int numts) {
 #if AROObjectSynchronizer_debugVerbosity >= 1
-    if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"Sync called over %p,%p (%p,%p) %d p %d sp %d spbuf %d\n",
+    if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"Sync called over %p,%p (%p,%p) %d p %d sp %d spbuf %d\n", 
 		syncIDhead, syncIDptr, syncHashhead, syncHashptr, numts, syncPhase, syncState->numSyncPoints, numspinBuf);
 #endif
 
@@ -142,12 +142,12 @@ void AROObjectSynchronizer::processSyncState(uint64_t *syncIDhead, uint32_t *syn
 
 		int start = headspinBuf; int end = headspinBuf + numspinBuf - 1, flag = 1;
 #if AROObjectSynchronizer_debugVerbosity >= 1
-		if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"Processing batch of syncpoints - post compact - %d to %d (%d)\n", start, end, end % AROObjectSynchronizer_reqBufferSize);
+		if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"Processing batch of syncpoints (delegate %p ids %p) - post compact - %d to %d (%d)\n", delegate, syncIDptr, start, end, end % AROObjectSynchronizer_reqBufferSize);
 #endif
 		
 #if AROObjectSynchronizer_debugVerbosity >= 1
 		if (debugLevel >= 2) {
-	        AROLog_Print(logINFO,0,debugLabel,"------------------ sync points (cpp) at start ------------------\n");
+	        AROLog_Print(logINFO,0,debugLabel,"------------------ sync points (cpp) at start (delegate %p ids %p) ------------------\n", delegate, syncIDptr);
 	        for (i = 0; i <= syncState->numSyncPoints; i++)
 	            AROLog_Print(logINFO,0,debugLabel,"\t%d : %d %d %d %lld %lld\n", i, 
 					(syncState->syncPoints + i)->res, (syncState->syncPoints + i)->id1, (syncState->syncPoints + i)->id2, 
@@ -164,7 +164,7 @@ void AROObjectSynchronizer::processSyncState(uint64_t *syncIDhead, uint32_t *syn
 			flag &= AROObjectSynchronizerInf_processSyncPoint(syncState, procPoint, numts, syncIDptr, syncIDstride, tsreq, &numtsreq, spreq, &numspreq);
 			start++; headspinBuf = (headspinBuf == AROObjectSynchronizer_reqBufferSize-1) ? 0 : headspinBuf+1; numspinBuf--;
 #if AROObjectSynchronizer_debugVerbosity >= 1
-			if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"processed syncpoint (%d to %d) %d %d %d %lld %lld %08x over %d items to %d requests and %d syncpoints\n",
+			if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"processed syncpoint (%d to %d) %d %d %d %lld %lld %08x over %d items to %d requests and %d syncpoints\n", 
 				start, end, procPoint->res, procPoint->id1, procPoint->id2, procPoint->ts1, procPoint->ts2, procPoint->hash, numts, numtsreq, numspreq);
 #endif
 			// compact updates to the requests for sync IDs
@@ -186,8 +186,20 @@ void AROObjectSynchronizer::processSyncState(uint64_t *syncIDhead, uint32_t *syn
 		if (flag == 1) { 
 			AROObjectSynchronizerInf_resolveLocalAlignment(
 				syncState, numts, syncIDptr, syncIDstride, tsreq, &numtsreq, spreq, &numspreq);
+//#ifdef ACT_AS_PRIORITY_PEER
 #if AROObjectSynchronizer_debugVerbosity >= 1
-			if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"%d new requests from local alignment\n", numtsreq + numspreq);
+			double l2G, g2N, prgrs = getSynchronizerProgress(numts, &l2G, &g2N);
+			if (debugLevel >= 1) 
+				if (prgrs != 1.0) AROLog::Log().Print(logINFO,1,debugLabel,"Sync progress (delegate %p): %.1f %% (l %.4lf g %.4lf) - %d | %d,%d,%d over %d\n", 
+					delegate, 100.0 * prgrs, l2G, g2N, numts, 
+					(syncState->numSyncPoints < 1) ? -1 : syncState->syncPoints[0].id1,
+					(syncState->numSyncPoints < 1) ? -1 : syncState->syncPoints[syncState->numSyncPoints].id1, 
+					(syncState->numSyncPoints < 1) ? -1 : syncState->syncPoints[syncState->numSyncPoints].id1, 
+					(syncState->numSyncPoints < 1) ? -1 : syncState->syncPoints[syncState->numSyncPoints].id2, syncState->numSyncPoints
+				);
+#endif
+#if AROObjectSynchronizer_debugVerbosity >= 2
+			if (debugLevel >= 2) AROLog::Log().Print(logINFO,1,debugLabel,"%d new requests from local alignment\n", numtsreq + numspreq);
 #endif
 			// compact updates to the requests for sync IDs
 		    for (i = 0; i < numtsreq; i++) {
@@ -204,7 +216,7 @@ void AROObjectSynchronizer::processSyncState(uint64_t *syncIDhead, uint32_t *syn
 
 #if AROObjectSynchronizer_debugVerbosity >= 1
 		if (debugLevel >= 2) {
-			AROLog_Print(logINFO,0,debugLabel,"------------------ sync points (cpp) at end ------------------\n");
+			AROLog_Print(logINFO,0,debugLabel,"------------------ sync points (cpp) at end (delegate %p ids %p) ------------------\n", delegate, syncIDptr);
 			for (i = 0; i <= syncState->numSyncPoints; i++)
 				AROLog_Print(logINFO,0,debugLabel,"\t%d : %d %d %d %lld %lld\n", i, 
 					(syncState->syncPoints + i)->res, (syncState->syncPoints + i)->id1, (syncState->syncPoints + i)->id2, 
@@ -226,15 +238,19 @@ void AROObjectSynchronizer::processSyncState(uint64_t *syncIDhead, uint32_t *syn
 			if (numspreqBuf == 0) {
 				this->getGlobalSyncPoint(spreqBuf, numts); numspreqBuf = 1;
 #if AROObjectSynchronizer_debugVerbosity >= 1
-				if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"Creating default sync because of empty reply : %d %d %d %lld %lld %08x\n",
+				if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"Creating default sync because of empty reply : %d %d %d %lld %lld %08x\n", 
 					spreqBuf->res, spreqBuf->id1, spreqBuf->id2, spreqBuf->ts1, spreqBuf->ts2, spreqBuf->hash);
 #endif
 			}
 	
 			for (i = 0; i < numspreqBuf; i++) {
+#if AROObjectSynchronizer_debugVerbosity >= 1
+				if (debugLevel >= 1) AROLog::Log().Print(logDEBUG4,1,debugLabel,"Synchronizer request : %d %d %d %lld %lld\n", 
+					(spreqBuf + i)->res, (spreqBuf + i)->id1, (spreqBuf + i)->id2, (long long int)((spreqBuf + i)->ts1), (long long int)((spreqBuf + i)->ts2));
+#endif
 				if (checkMalformedSyncPoint(spreqBuf + i)) {
-#ifdef ACT_AS_PRIORITY_PEER		
-					AROLog::Log()->Print(logERROR,1,"SYNC-ERROR","Synchronizer about to send request for malformed syncPoint : %d %d %d %lld %lld\n", 
+#ifdef ACT_AS_PRIORITY_PEER
+					AROLog::Log().Print(logERROR,1,"SYNC-ERROR","Synchronizer about to send request for malformed syncPoint : %d %d %d %lld %lld\n", 
 						(spreqBuf + i)->res, (spreqBuf + i)->id1, (spreqBuf + i)->id2, (long long int)((spreqBuf + i)->ts1), (long long int)((spreqBuf + i)->ts2));
 #endif
 				} else { if (delegate) delegate->sendRequestForSyncPoint(spreqBuf + i, this); }
@@ -243,20 +259,23 @@ void AROObjectSynchronizer::processSyncState(uint64_t *syncIDhead, uint32_t *syn
 			lastProcessTime = AOc_localTimestamp();
 		} else {
 #if AROObjectSynchronizer_debugVerbosity >= 1
-			if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"Skipping sync directives (%d,%d) at time %lld - last send %lld\n",
+			if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"Skipping sync directives (%d,%d) at time %lld - last send %lld\n", 
 				numtsreqBuf, numspreqBuf, AOc_localTimestamp(), lastProcessTime);
 #endif
 		}
 		
 //		int pivotSyncPoint = AROObjectSynchronizerInf_checkAllSyncPoints(syncState);
 		int pivotSyncPoint = AROObjectSynchronizerInf_checkAllSyncPoints(syncState, numts, syncIDptr, syncIDstride);
-		if (pivotSyncPoint == -1) {
+//        AROLog::Log().Print(logINFO, 1, debugLabel, "Pivot %d - numSync %d\n", pivotSyncPoint, syncState->numSyncPoints);
+		if (pivotSyncPoint == -1) { //Yue: add pivotSyncPoint == -4 for cheating through (1,1) condition || pivotSyncPoint == -4
 #if AROObjectSynchronizer_debugVerbosity >= 1
 			if (debugLevel >= 1) AROLog::Log().Print(logINFO,1,debugLabel,"List has been successfully synchronized at time %lld!\n", AOc_localTimestamp());
 #endif
-			if (syncState->numSyncPoints > 0) {
-				if (delegate) delegate->notificationOfSyncAchieved((double)networkPeriod / 1e6, this);
-			}
+			if (syncState->numSyncPoints < 0) {
+				if (delegate) delegate->notificationOfSyncAchieved((double)networkPeriod / 1e6, -1, this); // 
+			} else if (syncState->numSyncPoints > 0) {
+				if (delegate) delegate->notificationOfSyncAchieved((double)networkPeriod / 1e6, 1, this);
+			} 
 			syncPhase = tAROObjectSynchronizerPhase_aggregate;
 		}
 #if AROObjectSynchronizer_debugVerbosity >= 1
@@ -292,10 +311,31 @@ void AROObjectSynchronizer::processSyncState(uint64_t *syncIDhead, uint32_t *syn
 	}
 }
 
+double AROObjectSynchronizer::getSynchronizerProgress(int numts, double *localToGlobal_, double *globalToNetwork_) {
+	int numSP = syncState->numSyncPoints;
+	double localToGlobal, globalToNetwork;
+	if (numSP < 1) { localToGlobal = 1.0; globalToNetwork = -1.0; } // the global sync picture is empty
+	else {
+		int numGlobal = (syncState->syncPoints[numSP].ts1 == syncState->syncPoints[numSP].ts2) ? 
+			syncState->syncPoints[numSP].id1 + syncState->syncPoints[numSP].id2 : syncState->syncPoints[numSP].id1;
+		if (syncState->syncPoints[0].id1 == 1) { 
+			globalToNetwork = 1.0; 
+			localToGlobal = (double)numts / (double)numGlobal;
+		} else {
+			int partGlobal = numGlobal + 1 - syncState->syncPoints[0].id1;
+			globalToNetwork = (double)partGlobal / (double)numGlobal;
+			localToGlobal = (double)numts / (double)partGlobal;
+		}
+	}
+	if (localToGlobal_ != NULL) *localToGlobal_ = localToGlobal;
+	if (globalToNetwork_ != NULL) *globalToNetwork_ = globalToNetwork;
+	return localToGlobal * globalToNetwork;
+}
+
 void AROObjectSynchronizer::notifyOfSyncPoint(SyncPoint *syncPoint) {
 	if (checkMalformedSyncPoint(syncPoint)) {
-#ifdef ACT_AS_PRIORITY_PEER		
-		AROLog::Log()->Print(logERROR,1,"SYNC-ERROR","Synchronizer was notified with malformed syncPoint : %d %d %d %lld %lld\n", 
+#ifdef ACT_AS_PRIORITY_PEER
+		AROLog::Log().Print(logERROR,1,"SYNC-ERROR","Synchronizer was notified with malformed syncPoint : %d %d %d %lld %lld\n", 
 			syncPoint->res, syncPoint->id1, syncPoint->id2, (long long int)(syncPoint->ts1), (long long int)(syncPoint->ts2));
 #endif
 		return;
@@ -303,7 +343,7 @@ void AROObjectSynchronizer::notifyOfSyncPoint(SyncPoint *syncPoint) {
 	
 	int loc = (headspinBuf+numspinBuf) % AROObjectSynchronizer_reqBufferSize;
 #if AROObjectSynchronizer_debugVerbosity >= 1
-	if (debugLevel >= 1) AROLog::Log().Print(logDEBUG1,1,debugLabel,"Got notification of sync point %d %d %d %lld %lld %08x into loc %d\n",
+	if (debugLevel >= 1) AROLog::Log().Print(logDEBUG1,1,debugLabel,"Got notification of sync point %d %d %d %lld %lld %08x into loc %d\n", 
 		syncPoint->res, syncPoint->id1, syncPoint->id2, syncPoint->ts1, syncPoint->ts2, syncPoint->hash, loc);
 #endif
 	if (numspinBuf < AROObjectSynchronizer_reqBufferSize) {
@@ -311,11 +351,11 @@ void AROObjectSynchronizer::notifyOfSyncPoint(SyncPoint *syncPoint) {
 		if (syncPhase == tAROObjectSynchronizerPhase_partition) lastProcessTime = 0ll;		
 	} 
 #if AROObjectSynchronizer_debugVerbosity >= 1
-	else { if (debugLevel >= 1) AROLog::Log().Print(logDEBUG1,1,debugLabel,"Buffer overrun to %d at loc %d notifying of sync point %d %d %d %lld %lld %08x\n",
+	else { if (debugLevel >= 1) AROLog::Log().Print(logDEBUG1,1,debugLabel,"Buffer overrun to %d at loc %d notifying of sync point %d %d %d %lld %lld %08x\n", 
 		numspinBuf, loc, syncPoint->res, syncPoint->id1, syncPoint->id2, syncPoint->ts1, syncPoint->ts2, syncPoint->hash); }
 #endif
 #if AROObjectSynchronizer_debugVerbosity >= 1
-	if (debugLevel >= 1) AROLog::Log().Print(logDEBUG1,1,debugLabel,"Next scheduled batch at %lld (%lld + %lld)\n",
+	if (debugLevel >= 1) AROLog::Log().Print(logDEBUG1,1,debugLabel,"Next scheduled batch at %lld (%lld + %lld)\n", 
 		(long long int)(lastProcessTime + networkPeriod), (long long int)lastProcessTime, (long long int)networkPeriod);
 #endif
 }
@@ -323,11 +363,11 @@ void AROObjectSynchronizer::notifyOfSyncPoint(SyncPoint *syncPoint) {
 void AROObjectSynchronizer::notifyOfUpdatedSyncID(uint64_t syncID) {
 	int loc = (headtsinBuf+numtsinBuf) % AROObjectSynchronizer_reqBufferSize;
 #if AROObjectSynchronizer_debugVerbosity >= 1
-	if (debugLevel >= 1) AROLog::Log()->Print(logDEBUG1,1,debugLabel,"Got notification for updated syncID %lld into loc %d\n", syncID, loc);
+	if (debugLevel >= 1) AROLog::Log().Print(logDEBUG1,1,debugLabel,"Got notification for updated syncID %lld into loc %d\n", syncID, loc);
 #endif
 	if (numtsinBuf < AROObjectSynchronizer_reqBufferSize) { tsinBuf[loc] = syncID; numtsinBuf++; }
 #if AROObjectSynchronizer_debugVerbosity >= 1
-	else { if (debugLevel >= 1) AROLog::Log()->Print(logDEBUG1,1,debugLabel,"Buffer overrun to %d at loc %d notifying of sync ID %lld\n", numspinBuf, loc, syncID); }
+	else { if (debugLevel >= 1) AROLog::Log().Print(logDEBUG1,1,debugLabel,"Buffer overrun to %d at loc %d notifying of sync ID %lld\n", numspinBuf, loc, syncID); }
 #endif
 }*/
 
