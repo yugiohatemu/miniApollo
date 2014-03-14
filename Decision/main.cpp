@@ -4,7 +4,8 @@
 #include "AROLog.h"
 
 int main( int argc, char * argv[] ){
-    AROLog::Log().SetLogLevel(logINFO);
+    AROLog::Log().OpenLog("/Users/yuehuang/Desktop/Decision/Decision/Log","linux_client.log");
+    AROLog::Log().SetLogLevel(logDEBUG);
 
     PriorityPeer * priority_peer = new PriorityPeer();
     std::vector<Peer * > peer_list;
@@ -22,5 +23,6 @@ int main( int argc, char * argv[] ){
         delete peer_list[i];
     }
     delete priority_peer;
+    AROLog::Log().CloseLog();
     return 0;
 }

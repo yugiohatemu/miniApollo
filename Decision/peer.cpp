@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <algorithm>
 #include "AROLog.h"
+#include <sstream>
 
 const unsigned int BULLY_TIME_OUT = 7;
 
@@ -32,13 +33,16 @@ Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,PriorityPeer * priori
     availability =  (float)(rand() % 10 + 1) / 10;
     if(availability < 0.8) availability = 0.8;
     
+    std::stringstream ss; ss<<"Peer# "<<pid;
+    tag = ss.str();
+    
     action_list = new ActionList(io_service,strand,pid, peer_list,priority_peer );
     
     for (unsigned int i = 0; i < 3; i++) {
         thread_group.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
     }
     
-    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d init with availability %f\n",pid,availability);
+    AROLog::Log().Print(logINFO, 1, tag.c_str(), "Init with availability %f\n",availability);
     
     
 
@@ -54,7 +58,7 @@ Peer::~Peer(){
     thread_group.join_all();
     
     delete action_list;
-    AROLog::Log().Print(logINFO, 1, "Peer", "-------------------\n",pid);
+    AROLog::Log().Print(logINFO, 1, tag.c_str(), "-------------------\n");
 }
 
 void Peer::cancel_all(){
@@ -73,7 +77,7 @@ void Peer::cancel_all(){
 void Peer::get_offline(){
     cancel_all();
     
-//    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d get offline\n",pid);
+    AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "Get offline\n");
     
     t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 30 *(1-availability) + rand() % 10));
     t_on_off_line.async_wait(strand.wrap(boost::bind(&Peer::get_online,this)));
@@ -89,7 +93,7 @@ void Peer::get_online(){
     t_new_feed.expires_from_now(boost::posix_time::seconds(rand() % 6 + 5));
     t_new_feed.async_wait(strand.wrap(boost::bind(&Peer::new_feed,this,boost::asio::placeholders::error)));
     
-//    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d get online\n",pid);
+    AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "Get online\n");
     
     t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 20 * availability + rand() % 5));
     t_on_off_line.async_wait(boost::bind(&Peer::get_offline,this));
@@ -126,7 +130,7 @@ void Peer::start_bully(const boost::system::error_code &e){
     t_being_bully.cancel();
     
     state = BULLY_OTHER;
-    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d start bully\n",pid);
+    AROLog::Log().Print(logINFO, 1,tag.c_str(), "Start bully\n");
     
     for (unsigned int i = 0; i < peer_list.size(); i++) {
         if (i != pid) {
@@ -164,7 +168,7 @@ void Peer::cancel_bully(const boost::system::error_code &e){
     if (e == boost::asio::error::operation_aborted || !online) {
         return ;
     }
-    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d cancel bully\n",pid);
+    AROLog::Log().Print(logINFO, 1, tag.c_str(),"Cancel bully\n");
     t_bully_other.cancel();
     t_being_bully.cancel();
 }
@@ -172,7 +176,7 @@ void Peer::cancel_bully(const boost::system::error_code &e){
 void Peer::finish_bully(const boost::system::error_code &e){
     if (e == boost::asio::error::operation_aborted || !online) return ;
     
-    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d finish bully\n",pid);
+    AROLog::Log().Print(logINFO, 1, tag.c_str(),"finish bully\n");
     action_list->good_peer_first();
     //broad cast victory
     for (unsigned int i = 0; i < peer_list.size(); i++) {
@@ -183,7 +187,7 @@ void Peer::finish_bully(const boost::system::error_code &e){
 void Peer::stop_bully(const boost::system::error_code &e){
     if (e == boost::asio::error::operation_aborted || !online) return ;
     
-    AROLog::Log().Print(logINFO, 1, "Peer", "Peer # %d stop bully\n",pid);
+    AROLog::Log().Print(logINFO, 1, tag.c_str(),"Stop bully\n");
     t_bully_other.cancel();
     t_being_bully.cancel();
 

@@ -21,6 +21,7 @@
 #include "action_C.h"
 #include "AROObjectSynchronizer.h"
 #include "AROProtocols.h"
+#include <string.h>
 class Peer;
 
 class ActionList:public AROSyncResponder{
@@ -42,6 +43,8 @@ class ActionList:public AROSyncResponder{
     bool BB_started;
     unsigned int sync_region = 0;
     PriorityPeer * priority_peer;
+    
+    std::string tag;
 public:
     ActionList(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
     ~ActionList();

@@ -11,6 +11,7 @@
 
 #include "priorityPeer.h"
 #include "actionList.h"
+#include <string.h>
 
 class Peer{
     struct Message{
@@ -48,7 +49,8 @@ private:
         if(online) func();
     }
     
-   
+    std::string tag;
+    
     std::vector<Peer *> &peer_list;
     PriorityPeer * priority_peer;
     State state;

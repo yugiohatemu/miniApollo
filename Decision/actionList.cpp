@@ -11,10 +11,11 @@
 #include <boost/date_time.hpp>
 #include <boost/bind.hpp>
 #include <boost/bind/protect.hpp>
-#include <algorithm>
+#include <sstream>
 
 #include "AROLog.h"
 #include "AROUtil_C.h"
+
 const unsigned int BB_SIZE = 13;
 
 ActionList::ActionList(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list,PriorityPeer * priority_peer):
@@ -28,8 +29,13 @@ ActionList::ActionList(boost::asio::io_service &io_service, boost::asio::io_serv
 {
     
     ac_list = (Action_C*) malloc(sizeof(Action_C) * 100);
+    
+    std::stringstream ss; ss<<"AC# "<<pid; tag = ss.str();
+    ss.clear();
+    ss<<"SYNC# "<<pid; std::string sync_tag = ss.str();
+    
     synchronizer = new AROObjectSynchronizer(NULL,NULL,  0 ,this); //
-    synchronizer->setDebugInfo(0, "AC-Sync");
+    synchronizer->setDebugInfo(0, sync_tag.c_str());
     synchronizer->setNetworkPeriod(0.5);
     
     count = 0;
@@ -40,7 +46,7 @@ ActionList::~ActionList(){
     //    AROLog::Log().Print(logINFO, 1, "SYNC", "Peer # %d summary\nBackBundle Region\n",pid);
     delete synchronizer;
     for (unsigned int i= 0; i < count; i++) {
-        AROLog::Log().Print(logINFO, 1, "SYNC", "Action # %d - %lld\n",i, ac_list[i].ts);
+        AROLog::Log().Print(logINFO, 1, tag.c_str(), "%d - %lld\n",i, ac_list[i].ts);
     }
     
     free(ac_list);
@@ -83,7 +89,7 @@ void ActionList::mergeAction(SyncPoint p){
     binaryReduceRangeWithKey(lo,hi,p.ts1,ac_list[lo].ts,ac_list[hi].ts,ac_list[pivot].ts);
     
     if (lo > hi) {
-        AROLog::Log().Print(logINFO, 1, "SYNC", "Peer # %d merge %lld low %d, high %d with total %d\n", pid,p.ts1, lo,hi, count);
+        AROLog::Log().Print(logINFO, 1, tag.c_str(), "Merge %lld low %d, high %d with total %d\n",p.ts1, lo,hi, count);
         if (lo < count) {
             for (int i = lo; i < count; i++) {
                 ac_list[i+1].ts = ac_list[i].ts;
@@ -114,7 +120,7 @@ void ActionList::add_new_action(){
         
     
         SyncPoint s ; s.ts1 = AOc_localTimestamp(); s.hash = 0;
-        AROLog::Log().Print(logINFO, 1, "SYNC","Peer # %d new action %lld created\n",pid, s.ts1);
+        AROLog::Log().Print(logINFO, 1, tag.c_str(),"New action %lld created\n", s.ts1);
         strand.dispatch(boost::bind(&ActionList::mergeAction, this, s));
         }
 //    count++
@@ -133,7 +139,7 @@ void ActionList::sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *se
 }
 
 void ActionList::notificationOfSyncAchieved(double networkPeriod, int code, void *sender){
-    AROLog::Log().Print(logINFO,1,"SYNC","Peer # %d sync achieved at %llf\n",pid, networkPeriod);
+    AROLog::Log().Print(logINFO,1,tag.c_str(),"Sync achieved at %llf\n", networkPeriod);
     
     if (networkPeriod < 60) networkPeriod *= 1.5;
     if (sender == synchronizer) synchronizer->setNetworkPeriod(networkPeriod);
@@ -153,7 +159,7 @@ void ActionList::processSyncPoint(SyncPoint msgSyncPoint){ //TODO: add a peer id
                 global_pic.ts1 = ac_list[0].ts;global_pic.ts2 = ac_list[count-1].ts;
                 global_pic.hash = 0; global_pic.res = count;
                 
-                AROLog::Log().Print(logINFO,1,"SYNC","Peer # %d responding to global pic with %d-%d %lld-%lld\n",pid,global_pic.id1,global_pic.id2,global_pic.ts1,global_pic.ts2);
+                AROLog::Log().Print(logINFO,1,tag.c_str(),"Responding to global pic with %d-%d %lld-%lld\n",global_pic.id1,global_pic.id2,global_pic.ts1,global_pic.ts2);
                 for (unsigned int i = 0; i < peer_list.size(); i++) {
                     if (i!=pid) {
                         peer_list[i]->enqueue(boost::protect(boost::bind(&ActionList::processAppDirective,peer_list[i]->action_list,global_pic,true)));
@@ -180,7 +186,7 @@ void ActionList::processSyncPoint(SyncPoint msgSyncPoint){ //TODO: add a peer id
         }
     }else {
         //id1, id2, ts1, ts2
-        AROLog::Log().Print(logINFO,1,"SYNC","Peer # %d notify of sync point %d-%d %lld-%lld\n",pid, msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
+        AROLog::Log().Print(logINFO,1,tag.c_str(),"Notify of sync point %d-%d %lld-%lld\n",msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
         synchronizer->notifyOfSyncPoint(&msgSyncPoint);
    }
 }
