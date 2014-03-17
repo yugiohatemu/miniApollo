@@ -29,6 +29,7 @@ class Application:public AROSyncResponder{
         PROCESS_SYNC_POINT,
         MERGE_ACTION,
         NEW_HEADER,
+        REQUEST_FROM_BB_SYNC,
     };
     
     union BLOCK_PAYLOAD{
@@ -50,6 +51,7 @@ class Application:public AROSyncResponder{
     
     boost::asio::deadline_timer t_sync;
     boost::asio::deadline_timer t_good_peer;
+    boost::asio::deadline_timer t_clean_up;
     
     ActionList_C * ac_list;
     std::vector<Peer *> &peer_list; //connection_pool in fact
@@ -81,10 +83,11 @@ public:
     void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
     void notificationOfSyncAchieved(double networkPeriod, int code, void *sender);
   
-    
     void search_good_peer(boost::system::error_code error);
     void good_peer_first();
     
-
+    void mergeHeader(Raw_Header_C * raw_header);
+    void mergeActionIntoBB(uint64_t ts);
+    void clean_up();
 };
 #endif /* defined(__Decision__synchronizer__) */
