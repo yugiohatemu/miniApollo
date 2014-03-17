@@ -382,3 +382,18 @@ bool AROObjectSynchronizer::checkMalformedSyncPoint(SyncPoint *syncPoint) {
 		))                    
 	) { return true; } else { return false; }
 }
+
+void AROObjectSynchronizer::reset(){
+    AROObjectSynchronizerInf_free(syncState);
+    //Free the old one first
+    syncPhase = tAROObjectSynchronizerPhase_idle;
+    syncState = AROObjectSynchronizerInf_init();
+
+	this->setSyncIDArrays(NULL,NULL,0);
+    localSyncRes = syncState->localRes;
+    
+    lastProcessTime = 0ll;
+	setNetworkPeriod(20.0);
+	numspinBuf = numtsreqBuf = numspreqBuf = 0;
+	headspinBuf = headtsreqBuf = headspreqBuf = 0;
+}

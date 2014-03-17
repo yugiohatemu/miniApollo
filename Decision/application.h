@@ -26,10 +26,11 @@ class Peer;
 class Application:public AROSyncResponder{
 
     enum FLAG{
-        PROCESS_SYNC_POINT,
-        MERGE_ACTION,
-        NEW_HEADER,
-        REQUEST_FROM_BB_SYNC,
+        APP_PROCESS_SP,
+        APP_MERGE_ACTION,
+        BB_PROCESS_SP,
+        BB_MERGE_HEADER,
+        BB_MERGE_ACTION,
     };
     
     union BLOCK_PAYLOAD{
@@ -49,7 +50,8 @@ class Application:public AROSyncResponder{
     boost::asio::io_service &io_service;
     boost::asio::io_service::strand &strand;
     
-    boost::asio::deadline_timer t_sync;
+    boost::asio::deadline_timer t_app_sync;
+    boost::asio::deadline_timer t_bb_sync;
     boost::asio::deadline_timer t_good_peer;
     boost::asio::deadline_timer t_clean_up;
     
@@ -74,11 +76,15 @@ public:
     void resume();
     void add_new_action();
     
-    void processAppDirective(Packet p);
+    void processMessage(Packet p);
     
-    void periodicSync(const boost::system::error_code &error);
-    void processSyncPoint(SyncPoint msgSyncPoint);
-    void mergeAction(uint64_t ts); //or Application??
+    void app_periodicSync(const boost::system::error_code &error);
+    void bb_periodicSync(const boost::system::error_code &error);
+
+    void app_processSyncPoint(SyncPoint msgSyncPoint);
+    void bb_processSyncPoint(SyncPoint msgSyncPoint);
+
+    void app_mergeAction(uint64_t ts); //or Application??
 
     void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
     void notificationOfSyncAchieved(double networkPeriod, int code, void *sender);
@@ -86,8 +92,9 @@ public:
     void search_good_peer(boost::system::error_code error);
     void good_peer_first();
     
-    void mergeHeader(Raw_Header_C * raw_header);
-    void mergeActionIntoBB(uint64_t ts);
+    void bb_mergeHeader(Raw_Header_C * raw_header);
+    void bb_mergeAction(uint64_t ts);
+    
     void clean_up();
 };
 #endif /* defined(__Decision__synchronizer__) */

@@ -48,7 +48,7 @@ public:
 
 	void setDebugInfo(int debugLevel_, const char *debugLabel_);
 	void setNetworkPeriod(double value);
-
+    
 	void setSyncIDArrays(uint64_t *syncIDhead, uint32_t *syncHashhead, int stride);
 	void getGlobalSyncPoint(SyncPoint *syncPoint, int numts);
 	void processSyncState(uint64_t *syncIDhead, uint32_t *syncHashhead, int stride, int numts);
@@ -57,6 +57,7 @@ public:
 	void notifyOfSyncPoint(SyncPoint *syncPoint);
 	//void notifyOfUpdatedSyncID(uint64_t syncID);
 	bool checkMalformedSyncPoint(SyncPoint *syncPoint);
+    void reset();
 };
 
 #endif /* defined(__ApolloLinuxClient__AROObjectSynchronizer__) */
