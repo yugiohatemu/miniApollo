@@ -36,16 +36,16 @@ void AROLog::OpenLog(std::string path, std::string filename) {
     std::stringstream timed_filename;
     this->path = path;
     
-        timed_filename << path << "/" << GetLogFilePrefix() << "_" << filename;
-        if ((fp = fopen(timed_filename.str().c_str(), "a")) == NULL) {
-            fprintf(stderr, "Error opening log file: %s\n", timed_filename.str().c_str());
-        } else {
-            fprintf(stdout, "%s: INFO  : Log file \"%s\" opened\n", GetTime().c_str(), timed_filename.str().c_str());
-            fprintf(fp, "%s: INFO  : Log file \"%s\" opened\n", GetTime().c_str(), timed_filename.str().c_str());
-            log_suffix = filename;
-            current_log_date = GetDate();
-            current_log_name = timed_filename.str();
-        }
+    timed_filename << path << "/" << GetLogFilePrefix() << "_" << filename;
+    if ((fp = fopen(timed_filename.str().c_str(), "a")) == NULL) {
+        fprintf(stderr, "Error opening log file: %s\n", timed_filename.str().c_str());
+    } else {
+        fprintf(stdout, "%s: INFO  : Log file \"%s\" opened\n", GetTime().c_str(), timed_filename.str().c_str());
+        fprintf(fp, "%s: INFO  : Log file \"%s\" opened\n", GetTime().c_str(), timed_filename.str().c_str());
+        log_suffix = filename;
+        current_log_date = GetDate();
+        current_log_name = timed_filename.str();
+    }
     //}
 #endif
 #endif
@@ -59,8 +59,8 @@ void AROLog::CloseLog() {
         fprintf(fp, "%s: INFO  : Log file closed\n", GetTime().c_str());
         fclose(fp);
         fp = NULL;
-//        current_log_name = "";
-//        current_log_date = "";
+        //        current_log_name = "";
+        //        current_log_date = "";
     } else {
         fprintf(stdout, "Log already closed\n");
     }
@@ -101,7 +101,7 @@ void AROLog::vPrint(int level, int timed, const char *tag, const char *format, v
     //va_list args;
     
     log_stream_lock.lock();
-
+    
 #if defined(__ANDROID__)
     int android_level;
     
@@ -111,22 +111,22 @@ void AROLog::vPrint(int level, int timed, const char *tag, const char *format, v
         case logWARNING: android_level = ANDROID_LOG_WARN; break;
         default: android_level = ANDROID_LOG_DEBUG; break;
     }
-        //va_start(args, format);
+    //va_start(args, format);
     if (level <= current_level) {
         __android_log_vprint(android_level, tag, format, args);
     }
-        //va_end(args);
+    //va_end(args);
 #else
-
+    
     if (!fp) {
-//        fprintf(stderr, "Please open log file before printing log messages.\n");
+        fprintf(stderr, "Please open log file before printing log messages.\n");
         //va_start(args, format);
         vfprintf(stdout, format, args);
         //va_end(args);
     } else {
         CheckLogDate();
         if (timed) {
-//                fprintf(stdout, "%d: ", ugetmalloccounter());
+            //                fprintf(stdout, "%d: ", ugetmalloccounter());
             if (level <= current_level) {
                 fprintf(stdout, "tid: %s: ", boost::lexical_cast<std::string>(boost::this_thread::get_id()).c_str());
                 fprintf(stdout, "%s: ", GetTime().c_str());
@@ -140,19 +140,19 @@ void AROLog::vPrint(int level, int timed, const char *tag, const char *format, v
         }
         //va_start(args, format);
         if (level <= current_level
-//                && (!strcmp(tag, "CM") || !strcmp(tag, "B") || !strcmp(tag, "D"))
+            //                && (!strcmp(tag, "CM") || !strcmp(tag, "B") || !strcmp(tag, "D"))
             ) {
-        va_list args2; va_copy(args2, args);
-        vfprintf(stdout, format, args2);
-        va_end(args2);
-    }
+            va_list args2; va_copy(args2, args);
+            vfprintf(stdout, format, args2);
+            va_end(args2);
+        }
         //va_end(args);
         //va_start(args, format);
         vfprintf(fp, format, args);
         //va_end(args);
         fflush(fp);
     }
-#endif        
+#endif
     log_stream_lock.unlock();
 #endif // !defined(PRODUCTION)
 }

@@ -9,11 +9,9 @@
 #ifndef __ApolloPriorityPeer__AROLog__
 #define __ApolloPriorityPeer__AROLog__
 
-#include <iostream>
 #include "AROLog_C.h"
 #include <stdarg.h>
-
-using namespace std;
+#include <iostream>
 
 class AROLog {
 private:

@@ -24,7 +24,7 @@
 #include <string.h>
 class Peer;
 
-class ActionList:public AROSyncResponder{
+class Application:public AROSyncResponder{
 
     unsigned int pid;
     
@@ -35,7 +35,8 @@ class ActionList:public AROSyncResponder{
     boost::asio::deadline_timer t_sync;
     boost::asio::deadline_timer t_clean_up;
     
-    Action_C * ac_list;
+//    Action_C * ac_list;
+    ActionList_C * ac_list;
     std::vector<Peer *> &peer_list; //connection_pool in fact
     
     boost::mutex mutex;
@@ -46,19 +47,19 @@ class ActionList:public AROSyncResponder{
     
     std::string tag;
 public:
-    ActionList(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
-    ~ActionList();
+    Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
+    ~Application();
    
-    
     AROObjectSynchronizer * synchronizer;
-    unsigned int count;
+    AROObjectSynchronizer * bb_synchronizer;
+//    unsigned int count;
     void pause();
     void resume();
     void add_new_action();
     void processAppDirective(SyncPoint p, bool flag);
     void periodicSync(const boost::system::error_code &error);
     void processSyncPoint(SyncPoint msgSyncPoint);
-    void mergeAction(SyncPoint p); //or actionList??
+    void mergeAction(SyncPoint p); //or Application??
 
     void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
     void notificationOfSyncAchieved(double networkPeriod, int code, void *sender);

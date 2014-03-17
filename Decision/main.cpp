@@ -4,7 +4,7 @@
 #include "AROLog.h"
 
 int main( int argc, char * argv[] ){
-    AROLog::Log().OpenLog("/Users/yuehuang/Desktop/Decision/Decision/Log","linux_client.log");
+    AROLog::Log().OpenLog("/Users/yuehuang/Desktop/Decision/Log","linux_client.log");
     AROLog::Log().SetLogLevel(logDEBUG);
 
     PriorityPeer * priority_peer = new PriorityPeer();
