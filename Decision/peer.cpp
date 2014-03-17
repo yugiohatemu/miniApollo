@@ -17,7 +17,7 @@
 #include "AROLog.h"
 #include <sstream>
 
-const unsigned int BULLY_TIME_OUT = 7;
+const unsigned int BULLY_TIME_OUT = 5;
 
 Peer::Peer(unsigned int pid,std::vector<Peer *> &peer_list,PriorityPeer * priority_peer):
     pid(pid), peer_list(peer_list),priority_peer(priority_peer),
@@ -162,14 +162,7 @@ void Peer::get_bullyed(Peer::Message m){
     }
 }
 
-void Peer::cancel_bully(const boost::system::error_code &e){
-    if (e == boost::asio::error::operation_aborted || !online) {
-        return ;
-    }
-    AROLog::Log().Print(logINFO, 1, tag.c_str(),"Cancel bully\n");
-    t_bully_other.cancel();
-    t_being_bully.cancel();
-}
+
 
 void Peer::finish_bully(const boost::system::error_code &e){
     if (e == boost::asio::error::operation_aborted || !online) return ;
@@ -178,12 +171,12 @@ void Peer::finish_bully(const boost::system::error_code &e){
     application->good_peer_first();
     //broad cast victory
     for (unsigned int i = 0; i < peer_list.size(); i++) {
-        peer_list[i]->enqueue(boost::protect(boost::bind(&Peer::stop_bully, peer_list[i], error)));
+        peer_list[i]->enqueue(boost::protect(boost::bind(&Peer::stop_bully, peer_list[i])));
     }
 }
 
-void Peer::stop_bully(const boost::system::error_code &e){
-    if (e == boost::asio::error::operation_aborted || !online) return ;
+void Peer::stop_bully(){
+//    if (e == boost::asio::error::operation_aborted || !online) return ;
     
     AROLog::Log().Print(logINFO, 1, tag.c_str(),"Stop bully\n");
     t_bully_other.cancel();

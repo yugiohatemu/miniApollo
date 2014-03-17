@@ -15,7 +15,6 @@
 #include <inttypes.h>
 #include <vector>
 
-#include "backBundle.h"
 #include "priorityPeer.h"
 //need to keep a link to the backbundle synchronizer
 #include "action_C.h"
@@ -26,6 +25,23 @@ class Peer;
 
 class Application:public AROSyncResponder{
 
+    enum FLAG{
+        PROCESS_SYNC_POINT,
+        MERGE_ACTION,
+        NEW_HEADER,
+    };
+    
+    union BLOCK_PAYLOAD{
+        uint64_t ts;
+        SyncPoint sync_point;
+        Raw_Header_C raw_header;
+    };
+    
+    struct Packet{
+        BLOCK_PAYLOAD content;
+        enum FLAG flag;
+    };
+    
     unsigned int pid;
     
     boost::system::error_code error;
@@ -33,9 +49,8 @@ class Application:public AROSyncResponder{
     boost::asio::io_service::strand &strand;
     
     boost::asio::deadline_timer t_sync;
-    boost::asio::deadline_timer t_clean_up;
+    boost::asio::deadline_timer t_good_peer;
     
-//    Action_C * ac_list;
     ActionList_C * ac_list;
     std::vector<Peer *> &peer_list; //connection_pool in fact
     
@@ -52,14 +67,16 @@ public:
    
     AROObjectSynchronizer * synchronizer;
     AROObjectSynchronizer * bb_synchronizer;
-//    unsigned int count;
+
     void pause();
     void resume();
     void add_new_action();
-    void processAppDirective(SyncPoint p, bool flag);
+    
+    void processAppDirective(Packet p);
+    
     void periodicSync(const boost::system::error_code &error);
     void processSyncPoint(SyncPoint msgSyncPoint);
-    void mergeAction(SyncPoint p); //or Application??
+    void mergeAction(uint64_t ts); //or Application??
 
     void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
     void notificationOfSyncAchieved(double networkPeriod, int code, void *sender);

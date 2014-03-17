@@ -42,7 +42,6 @@ public:
         io_service.post(strand.wrap(boost::bind( &Peer::execute<TFunc>, this, func )));
     }
     void start_bully(const boost::system::error_code &e);
-    void cancel_bully(const boost::system::error_code &e);
 private:
     template <typename TFunc>
     void execute(TFunc func){
@@ -79,7 +78,7 @@ private:
     
     
     void finish_bully(const boost::system::error_code &e);
-    void stop_bully(const boost::system::error_code &e);
+    void stop_bully();
 };
 
 #endif /* defined(__Decision__peer__) */
