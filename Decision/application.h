@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "priorityPeer.h"
-//need to keep a link to the backbundle synchronizer
 #include "action_C.h"
 #include "AROObjectSynchronizer.h"
 #include "AROProtocols.h"
@@ -31,7 +30,6 @@ class Application:public AROSyncResponder{
         APP_PROCESS_SP,
         APP_MERGE_ACTION,
         BB_PROCESS_SP,
-//        BB_MERGE_HEADER,
         BB_MERGE_ACTION,
     };
     
@@ -56,19 +54,43 @@ class Application:public AROSyncResponder{
     boost::asio::deadline_timer t_app_sync;
     boost::asio::deadline_timer t_bb_sync;
     
-    boost::asio::deadline_timer t_good_peer;
-    boost::asio::deadline_timer t_clean_up;
+    boost::asio::deadline_timer t_try_bb;
     
     ActionList_C * ac_list;
+    PriorityPeer * priority_peer;
     std::vector<Peer *> &peer_list; //connection_pool in fact
-    
     boost::mutex mutex;
     
-    bool BB_started;
-    unsigned int sync_region = 0;
-    PriorityPeer * priority_peer;
+    bool GLOBAL_SYNCED;
+    bool BB_ing;
     
     std::string tag;
+    ////////////////////////////////////////////////////////////////////////////////
+    void processMessage(Packet p);
+    void broadcastToPeers(Packet p);
+    
+    void header_periodicSync(const boost::system::error_code &error);
+    void header_processSyncPoint(SyncPoint msgSyncPoint);
+    void header_mergeHeader(Raw_Header_C *raw_header);
+    
+    void app_resume();
+    void app_pause();
+    void app_reset();
+    void app_periodicSync(const boost::system::error_code &error);
+    void app_processSyncPoint(SyncPoint msgSyncPoint);
+    void app_mergeAction(uint64_t ts);
+    
+    void bb_resume();
+    void bb_pause();
+    void bb_reset();
+    void bb_periodicSync(const boost::system::error_code &error);
+    void bb_processSyncPoint(SyncPoint msgSyncPoint);
+    
+    void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
+    void notificationOfSyncAchieved(double networkPeriod, int code, void *sender);
+    
+    void bb_mergeAction(uint64_t ts);
+    
 public:
     Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
     ~Application();
@@ -80,31 +102,9 @@ public:
     void pause();
     void resume();
     void add_new_action();
-    void search_good_peer(boost::system::error_code error);
-    void good_peer_first();
-    void processMessage(Packet p);
-    void broadcastToPeers(Packet p);
     
-    void header_periodicSync(const boost::system::error_code &error);
-    void header_processSyncPoint(SyncPoint msgSyncPoint);
-    void header_mergeHeader(Raw_Header_C *raw_header);
-    
-    void app_periodicSync(const boost::system::error_code &error);
-    void app_processSyncPoint(SyncPoint msgSyncPoint);
-    void app_mergeAction(uint64_t ts);
-    //void app_mergeHeader
-    
-    void bb_periodicSync(const boost::system::error_code &error);
-    void bb_processSyncPoint(SyncPoint msgSyncPoint);
-
-   //or Application??
-
-    void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
-    void notificationOfSyncAchieved(double networkPeriod, int code, void *sender);
-  
-//    void bb_mergeHeader(Raw_Header_C * raw_header);
-    void bb_mergeAction(uint64_t ts);
-    
-    void clean_up();
+    void try_bb(boost::system::error_code error);
+    void pack_full_bb();
+   
 };
 #endif /* defined(__Decision__synchronizer__) */

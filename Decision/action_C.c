@@ -17,8 +17,8 @@ const int DEFAULT_SYNCHORNIZER_CAPATICY = 50;
 
 bool is_equal(Raw_Header_C * rh1, Raw_Header_C * rh2);
 bool is_less_than(Raw_Header_C * rh1, Raw_Header_C * rh2);
-void free_backBundle(BackBundle_C * bb);
-
+void free_BB(BackBundle_C * bb);
+BackBundle_C * init_empty_BB();
 #pragma mark - Action List
 ActionList_C* init_default_actionList(){
     ActionList_C * ac_list = (ActionList_C*) malloc(sizeof(ActionList_C));
@@ -52,7 +52,7 @@ void free_actionList(ActionList_C* ac_list){
     if (ac_list->header_list) {
         for (unsigned int i = 0; i < ac_list->header_count; i++) {
             if (ac_list->header_list[i].raw_header) free(ac_list->header_list[i].raw_header);
-            if (ac_list->header_list[i].bb) free_backBundle(ac_list->header_list[i].bb);
+            if (ac_list->header_list[i].bb) free_BB(ac_list->header_list[i].bb);
         }
         free(ac_list->header_list);
     }
@@ -116,7 +116,7 @@ void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header){
         ac_list->header_list[lo].ts = ts;
         ac_list->header_list[lo].hash = 0;
         ac_list->header_list[lo].raw_header = raw_header;
-        ac_list->header_list[lo].bb = NULL;
+        ac_list->header_list[lo].bb = init_empty_BB(); //TODO: create a default BUNDLE
         ac_list->header_list[lo].synced = false;
         
         ac_list->header_count++;
@@ -124,8 +124,7 @@ void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header){
     
 }
 
-//Or merge bb into header....
-void merge_new_header_with_bb(ActionList_C * ac_list, Raw_Header_C *raw_header, BackBundle_C * bb){
+void merge_new_header_with_BB(ActionList_C * ac_list, Raw_Header_C *raw_header, BackBundle_C * bb){
     if (!ac_list || !raw_header || !bb) {
         AROLog_Print(logERROR, 1, "", "Merge BB with Header ERROR");
         return ;
@@ -152,10 +151,12 @@ void merge_new_header_with_bb(ActionList_C * ac_list, Raw_Header_C *raw_header, 
         ac_list->header_list[lo].hash = 0;
         ac_list->header_list[lo].raw_header = raw_header;
         ac_list->header_list[lo].bb = bb;
-        ac_list->header_list[lo].synced = false;
+        ac_list->header_list[lo].synced = true;
         
         ac_list->header_count++;
     }
+    
+    remove_duplicate_actions(ac_list,bb);
 }
 
 bool is_header_section_synced(ActionList_C * ac_list){
@@ -163,9 +164,24 @@ bool is_header_section_synced(ActionList_C * ac_list){
     return ac_list->header_list[ac_list->header_count-1].synced;
 }
 
+bool is_action_in_active_region(ActionList_C * ac_list, uint64_t ts){
+    int lo = 0; int hi =  ac_list->action_count - 1;
+    binaryReduceRangeWithKey(lo,hi,ts,ac_list->action_list[lo].ts,ac_list->action_list[hi].ts,ac_list->action_list[pivot].ts);
+    return (lo<=hi);
+}
+
 #pragma mark - BackBundle
 
-BackBundle_C * init_backBundle_with_actions(Action_C * action_list, unsigned int count){
+BackBundle_C * init_empty_BB(){
+    BackBundle_C * bb = (BackBundle_C *) malloc(sizeof(BackBundle_C));
+    
+    bb->action_count = 0;
+    bb->action_list = (Action_C *) malloc(sizeof(Action_C) * 13);
+    
+    return bb;
+}
+
+BackBundle_C * init_BB_with_actions(Action_C * action_list, unsigned int count){
     BackBundle_C * bb = (BackBundle_C *) malloc(sizeof(BackBundle_C));
     
     bb->action_count = count;
@@ -180,14 +196,14 @@ BackBundle_C * init_backBundle_with_actions(Action_C * action_list, unsigned int
     return bb;
 }
 
-void free_backBundle(BackBundle_C * bb){
+void free_BB(BackBundle_C * bb){
     if (!bb) return;
     if (bb->action_list) free(bb->action_list);
     free(bb);
 }
 
 #pragma mark - Raw Header
-Raw_Header_C *init_raw_header_with_bb(BackBundle_C * bb){
+Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb){
     if (bb || bb->action_count == 0) {
          AROLog_Print(logERROR, 1, "", "Create Header with empty BB");
         return NULL;
@@ -199,6 +215,79 @@ Raw_Header_C *init_raw_header_with_bb(BackBundle_C * bb){
     header->size = bb->action_count;
     return header;
 }
+
+void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb){
+    for (unsigned int i = 0; i < bb->action_count; i++) {
+        int lo = 0; int hi =  ac_list->action_count - 1;
+        binaryReduceRangeWithKey(lo,hi,bb->action_list[i].ts,ac_list->action_list[lo].ts,ac_list->action_list[hi].ts,ac_list->action_list[pivot].ts);
+        if (lo <= hi){ ac_list->action_list[lo].ts = 0;  ac_list->action_list[lo].hash = 0;}
+    }
+    
+    //Shift actions to fill in space
+    int current = 0; int prev = 0;
+    while (current < ac_list->action_count) {
+        if (ac_list->action_list[current].ts != 0) {
+            
+            ac_list->action_list[prev].ts = ac_list->action_list[current].ts;
+            ac_list->action_list[prev].hash = ac_list->action_list[current].hash;
+
+            prev++;
+        }
+        current++;
+    }
+    //update real count
+    ac_list->action_count -= bb->action_count;
+
+}
+
+bool is_action_likely_in_bb(Raw_Header_C * raw_header, uint64_t ts){
+    return (raw_header->from <= ts && ts <= raw_header->to);
+}
+
+#pragma mark - BackBundle
+BackBundle_C * get_latest_BB(ActionList_C * ac_list){
+    if (ac_list->header_count == 0) return NULL;
+    else return ac_list->header_list[ac_list->header_count-1].bb;
+}
+
+void merge_action_into_BB(BackBundle_C * bb, uint64_t ts){
+    int lo = 0; int hi =  bb->action_count - 1;
+    binaryReduceRangeWithKey(lo,hi,ts,bb->action_list[lo].ts,bb->action_list[hi].ts,bb->action_list[pivot].ts);
+    
+    if (lo > hi) {
+        
+        if (lo < bb->action_count) {
+            for (int i = bb->action_count; i > lo; i--) {
+                bb->action_list[i].ts = bb->action_list[i-1].ts;
+                bb->action_list[i].hash = bb->action_list[i-1].hash;
+            }
+        }
+        bb->action_list[lo].ts = ts;
+        bb->action_list[lo].hash = 0;
+        
+        bb->action_count++;
+    }
+}
+
+
+void update_sync_state(Header_C * header){
+    Raw_Header_C * current_raw_header = init_raw_header_with_BB(header->bb);
+    header->synced =  is_equal(header->raw_header, current_raw_header);
+    free(current_raw_header);
+}
+
+void sync_header_with_self(ActionList_C * ac_list){
+    Header_C header = ac_list->header_list[ac_list->header_count-1];
+    BackBundle_C * bb = header.bb;
+    Raw_Header_C * raw_header = header.raw_header;
+    
+    for (unsigned int i = 0; i  < ac_list->action_count; i++) {
+        if (is_action_likely_in_bb(raw_header, ac_list->action_list[i].ts)) {
+            merge_action_into_BB(bb, ac_list->action_list[i].ts);
+        }
+    }
+}
+
 
 ///////////////////////////
 #pragma mark - Unused function?
@@ -222,14 +311,6 @@ bool is_less_than(Raw_Header_C * rh1, Raw_Header_C * rh2){
     return rh1->from < rh2->from;
 }
 
-BackBundle_C * get_newest_bb(ActionList_C * ac_list){
-    if (ac_list->header_count == 0) return NULL;
-    Header_C  header = ac_list->header_list[ac_list->header_count - 1];
-    if (header.bb) return header.bb;
-    
-    return NULL;
-}
-
 bool is_action_in_BB(BackBundle_C * bb, uint64_t ts){
     for (unsigned int i = 0; i < bb->action_count; i++) {
         if (bb->action_list[i].ts == ts){
@@ -243,54 +324,6 @@ bool is_action_in_BB(BackBundle_C * bb, uint64_t ts){
 
 #pragma mark - Header
 
-//Init header with cache map in future
-Header_C * init_header_with_actionList(Action_C * action, unsigned int action_count){
-    //We will create a sample header and
-    BackBundle_C  * bb = init_backBundle_with_actions(action, action_count);
-    if (bb) {
-        Raw_Header_C * raw_header = init_raw_header_with_bb(bb);
-        if (raw_header) {
-            Header_C * header = (Header_C *) malloc(sizeof(Header_C));
-            header->bb = bb;
-//            header->raw_header = raw_header;
-            header->synced = true;
-            return header;
-        }else{
-            free_backBundle(bb);
-        }
-    }
-    return NULL;
-}
-
-//TODO: double check here, not necessary...hmm
-Header_C* init_header_with_raw_header(Raw_Header_C * raw_header){
-    if (!raw_header) return NULL;
- 
-    Header_C * header = (Header_C *) malloc(sizeof(Header_C));;
-    header->bb = NULL;
-//    header->raw_header = raw_header;
-    header->synced = false;
-    return header;
-}
-
-//TODO: use full list to check?
-bool is_action_in_header(Header_C * header, Action_C * action){
-//    Raw_Header_C  * h = header->raw_header;
-//    if (h->from<= action->ts && action->ts <= h->to) { //In future, this depends on header itself
-//        return true;
-//    }
-    return false;
-}
-
-void update_sync_state(Header_C * header){
-    if (!header->bb) {
-        header->synced = false;
-        return;
-    }
-    Raw_Header_C * current_raw_header = init_raw_header_with_bb(header->bb);
-//    header->synced =  is_equal(header->raw_header, current_raw_header);
-//    free(current_raw_header);
-}
 
 void sync_self_with_unsyced_header(ActionList_C * ac_list){
     Header_C header = ac_list->header_list[ac_list->header_count-1];
@@ -306,44 +339,3 @@ void sync_self_with_unsyced_header(ActionList_C * ac_list){
     
 }
 
-void merge_existing_action(BackBundle_C * bb, uint64_t ts){
-    int lo = 0; int hi =  bb->action_count - 1;
-    binaryReduceRangeWithKey(lo,hi,ts,bb->action_list[lo].ts,bb->action_list[hi].ts,bb->action_list[pivot].ts);
-    
-    if (lo > hi) {
-        
-        if (lo < bb->action_count) {
-            for (int i = bb->action_count; i > lo; i--) {
-                bb->action_list[i].ts = bb->action_list[i-1].ts;
-                bb->action_list[i].hash = bb->action_list[i-1].hash;
-            }
-        }
-        bb->action_list[lo].ts = ts;
-        bb->action_list[lo].hash = 0;
-        
-        bb->action_count++;
-    }
-}
-//Or some suspicicous POINT because 0 is from the root action?
-void remove_duplicate(ActionList_C * ac_list){
-    BackBundle_C * bb = get_newest_bb(ac_list);
-    
-    for (unsigned int i = 0; i < ac_list->action_count; i++) {
-        if (is_action_in_BB(bb, ac_list->action_list[i].ts)) {
-            ac_list->action_list[i].ts = 0;
-        }
-    }
-    
-    //shift up the empty and reset action count
-    int current = 0;
-    int prev = 0;
-    while (current < ac_list->action_count) {
-        if (ac_list->action_list[current].ts != 0) {
-            ac_list->action_list[prev].ts = ac_list->action_list[current].ts;
-            prev++;
-        }
-        current++;
-    }
-    //update real count
-    ac_list->action_count -= bb->action_count;
-}

@@ -54,17 +54,21 @@ ActionList_C* init_default_actionList();
 void free_actionList(ActionList_C* ac_list);
 void merge_new_action(ActionList_C * ac_list, uint64_t ts);
 void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header);
+void merge_new_header_with_BB(ActionList_C * ac_list, Raw_Header_C *raw_header, BackBundle_C * bb);
 bool is_header_section_synced(ActionList_C * ac_list);
-    
+void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb);
+void sync_header_with_self(ActionList_C * ac_list);
 //BB
-BackBundle_C * init_backBundle_with_actions(Action_C * action_list, unsigned int count);
+BackBundle_C * init_BB_with_actions(Action_C * actions, unsigned int count);
+BackBundle_C * get_latest_BB(ActionList_C * ac_list);
+void merge_action_into_BB(BackBundle_C * bb, uint64_t ts);
 //Raw_Header
-Raw_Header_C *init_raw_header_with_bb(BackBundle_C * bb);
-    
-    
+Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb);
+//Header_C
+void update_sync_state(Header_C * header);
 //Header_C * init_header_with_actionList(Action_C * action, unsigned int action_count);
 //void sync_self_with_unsyced_header(ActionList_C * ac_list);
-//void update_sync_state(Header_C * header);
+
 //    
 //void merge_existing_action(BackBundle_C * bb, uint64_t ts);
 //

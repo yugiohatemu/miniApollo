@@ -168,7 +168,8 @@ void Peer::finish_bully(const boost::system::error_code &e){
     if (e == boost::asio::error::operation_aborted || !online) return ;
     
     AROLog::Log().Print(logINFO, 1, tag.c_str(),"finish bully\n");
-    application->good_peer_first();
+    strand.dispatch(boost::bind(&Application::pack_full_bb, application));
+ 
     //broad cast victory
     for (unsigned int i = 0; i < peer_list.size(); i++) {
         peer_list[i]->enqueue(boost::protect(boost::bind(&Peer::stop_bully, peer_list[i])));

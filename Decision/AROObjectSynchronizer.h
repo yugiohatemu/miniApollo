@@ -57,7 +57,9 @@ public:
 	void notifyOfSyncPoint(SyncPoint *syncPoint);
 	//void notifyOfUpdatedSyncID(uint64_t syncID);
 	bool checkMalformedSyncPoint(SyncPoint *syncPoint);
+    //Yue added
     void reset();
+    bool isEmpty();
 };
 
 #endif /* defined(__ApolloLinuxClient__AROObjectSynchronizer__) */
