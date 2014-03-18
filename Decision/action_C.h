@@ -34,13 +34,13 @@ typedef struct{
     unsigned int size;
 }Raw_Header_C;
     
-
-    
 typedef struct {
-    Raw_Header_C * raw_header;
+    uint64_t ts; //use this as a way to make header
+    uint32_t hash;//haha, so we also need that to be aligned so that we can let the sync state process
+    Raw_Header_C *raw_header;
     BackBundle_C * bb; //we can just call this actionlist like ActionList_C * bb
     bool synced;
-}Header_C;
+}__attribute__((aligned(8)))Header_C;
     
 typedef struct{
     unsigned int action_count;
@@ -49,25 +49,26 @@ typedef struct{
     Header_C * header_list;
 }ActionList_C;
     
+//ActionList
 ActionList_C* init_default_actionList();
 void free_actionList(ActionList_C* ac_list);
 void merge_new_action(ActionList_C * ac_list, uint64_t ts);
-void add_header_to_actionList(ActionList_C * ac_list,  Header_C * header);
-//void merge_new_header(ActionList_C * ac_list, Raw_Header_C * raw_header);
-void add_raw_header_to_actionList(ActionList_C * ac_list,  Raw_Header_C * raw_header);
-bool is_raw_header_in_actionList(ActionList_C * ac_list,  Raw_Header_C * raw_header);
+void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header);
 bool is_header_section_synced(ActionList_C * ac_list);
-//BackBundle_C * init_backBundle_with_capacity(unsigned int capacity);
-void free_backBundle(BackBundle_C * bb);
-BackBundle_C * get_newest_bb(ActionList_C * ac_list);
-//
-Header_C * init_header_with_actionList(Action_C * action, unsigned int action_count);
-void sync_self_with_unsyced_header(ActionList_C * ac_list);
-void update_sync_state(Header_C * header);
     
-void merge_existing_action(BackBundle_C * bb, uint64_t ts);
-
-void remove_duplicate(ActionList_C * ac_list);
+//BB
+BackBundle_C * init_backBundle_with_actions(Action_C * action_list, unsigned int count);
+//Raw_Header
+Raw_Header_C *init_raw_header_with_bb(BackBundle_C * bb);
+    
+    
+//Header_C * init_header_with_actionList(Action_C * action, unsigned int action_count);
+//void sync_self_with_unsyced_header(ActionList_C * ac_list);
+//void update_sync_state(Header_C * header);
+//    
+//void merge_existing_action(BackBundle_C * bb, uint64_t ts);
+//
+//void remove_duplicate(ActionList_C * ac_list);
     
 #ifdef __cplusplus
 }

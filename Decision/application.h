@@ -26,10 +26,12 @@ class Peer;
 class Application:public AROSyncResponder{
 
     enum FLAG{
+        HEADER_PROCESS_SP,
+        HEADER_MERGE_HEADER,
         APP_PROCESS_SP,
         APP_MERGE_ACTION,
         BB_PROCESS_SP,
-        BB_MERGE_HEADER,
+//        BB_MERGE_HEADER,
         BB_MERGE_ACTION,
     };
     
@@ -50,8 +52,10 @@ class Application:public AROSyncResponder{
     boost::asio::io_service &io_service;
     boost::asio::io_service::strand &strand;
     
+    boost::asio::deadline_timer t_header_sync;
     boost::asio::deadline_timer t_app_sync;
     boost::asio::deadline_timer t_bb_sync;
+    
     boost::asio::deadline_timer t_good_peer;
     boost::asio::deadline_timer t_clean_up;
     
@@ -69,30 +73,36 @@ public:
     Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
     ~Application();
    
+    AROObjectSynchronizer * header_syncrhonizer;
     AROObjectSynchronizer * synchronizer;
     AROObjectSynchronizer * bb_synchronizer;
 
     void pause();
     void resume();
     void add_new_action();
-    
+    void search_good_peer(boost::system::error_code error);
+    void good_peer_first();
     void processMessage(Packet p);
+    void broadcastToPeers(Packet p);
+    
+    void header_periodicSync(const boost::system::error_code &error);
+    void header_processSyncPoint(SyncPoint msgSyncPoint);
+    void header_mergeHeader(Raw_Header_C *raw_header);
     
     void app_periodicSync(const boost::system::error_code &error);
-    void bb_periodicSync(const boost::system::error_code &error);
-
     void app_processSyncPoint(SyncPoint msgSyncPoint);
+    void app_mergeAction(uint64_t ts);
+    //void app_mergeHeader
+    
+    void bb_periodicSync(const boost::system::error_code &error);
     void bb_processSyncPoint(SyncPoint msgSyncPoint);
 
-    void app_mergeAction(uint64_t ts); //or Application??
+   //or Application??
 
     void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
     void notificationOfSyncAchieved(double networkPeriod, int code, void *sender);
   
-    void search_good_peer(boost::system::error_code error);
-    void good_peer_first();
-    
-    void bb_mergeHeader(Raw_Header_C * raw_header);
+//    void bb_mergeHeader(Raw_Header_C * raw_header);
     void bb_mergeAction(uint64_t ts);
     
     void clean_up();
