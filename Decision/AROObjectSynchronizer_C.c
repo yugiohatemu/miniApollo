@@ -108,12 +108,12 @@ void AROObjectSynchronizerInf_free(AROObjectSynchronizerInf *op) {
 #if AROObjectSynchronizer_C_debugVerbosity >= 1
 	if (op->debugLabel != NULL) { AOc_free(op->debugLabel); op->debugLabel = NULL; }
 #endif
-//    AROLog_Print(logDEBUG4,0,"Sync_C","FREEA - %d\n", ugetmalloccounter());
+    AROLog_Print(logDEBUG4,0,"Sync_C","FREEA - %d\n", ugetmalloccounter());
     if (op->syncPoints != NULL)
         AOc_free(op->syncPoints);
-//    AROLog_Print(logDEBUG4,0,"Sync_C","FREEB - %d\n", ugetmalloccounter());
+    AROLog_Print(logDEBUG4,0,"Sync_C","FREEB - %d\n", ugetmalloccounter());
     AOc_free(op);
-//    AROLog_Print(logDEBUG4,0,"Sync_C","FREEC - %d\n", ugetmalloccounter());
+    AROLog_Print(logDEBUG4,0,"Sync_C","FREEC - %d\n", ugetmalloccounter());
 }
 
 void AROObjectSynchronizerInf_setDebugInfo(AROObjectSynchronizerInf *op, int debugLevel_, const char *debugLabel_) {
@@ -298,13 +298,14 @@ if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"\tsplo = %d sphi = %d\
 					syncState->syncPoints[splo].id1 = syncState->syncPoints[i+1].id1;
 			if (sphi > splo) {
 				for (i = splo+1; i <= syncState->numSyncPoints-sphi+splo; i++) 
-					syncState->syncPoints[i] = syncState->syncPoints[i+1];
+					syncState->syncPoints[i] = syncState->syncPoints[i+sphi-splo];
+//					syncState->syncPoints[i] = syncState->syncPoints[i+1];
 				syncState->numSyncPoints -= sphi - splo;
 			}
 		} else {
-#if AROObjectSynchronizer_C_debugVerbosity >= 1
+//#if AROObjectSynchronizer_C_debugVerbosity >= 1
 //if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"\tDoes not exist in syncpoints\n");
-#endif
+//#endif
 //			if (splo < syncState->numSyncPoints) { 
 //				if ((syncState->syncPoints[splo+1].id1 - syncState->syncPoints[splo].id1) < syncState->syncPoints[splo].res) 
 //					splo = -1; 
@@ -357,19 +358,7 @@ int AROObjectSynchronizerInf_processSyncPoint(AROObjectSynchronizerInf *syncStat
 				AROObjectSynchronizerInf_insertSyncPoint(syncState, &tmppoint);
 			}
 		} else if (proc->id1 != 1) return -1;
-	}/*
-	if (syncState->numSyncPoints < 0) {
->>>>>>> b1a020c39ce601c5ed08afb1b0aa99a8bc55f0ec
-		SyncPoint tmppoint; tmppoint.res = syncState->localRes;
-		tmppoint.id2 = 0; tmppoint.ts2 = 0ll; 
-		tmppoint.id1 = 1; tmppoint.ts1 = *(ts + (tmppoint.id1-1)*stride); 		
-		AROObjectSynchronizerInf_insertSyncPoint(syncState, &tmppoint);
-		if (numts > 1) {
-			tmppoint.id1 = numts; tmppoint.ts1 = *(ts + (tmppoint.id1-1)*stride); 		
-			AROObjectSynchronizerInf_insertSyncPoint(syncState, &tmppoint);
-		}
-	}*/
-
+	}	
     //if (syncState->numSyncPoints < 0) return -1;
 
     int i, j, numreq = 0, num_newsyncpoints = 0;
@@ -488,7 +477,8 @@ int AROObjectSynchronizerInf_processSyncPoint(AROObjectSynchronizerInf *syncStat
 			num_newsyncpoints++;
 		}
 	}		
-		
+
+////////////////////////////////////////////////////////////		
 	if (syncState->syncPoints[0].id1 != 1) {
 #if AROObjectSynchronizer_C_debugVerbosity >= 1
 		if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"Start of global picture is floating: %d %lld over %d\n", 
@@ -502,6 +492,7 @@ int AROObjectSynchronizerInf_processSyncPoint(AROObjectSynchronizerInf *syncStat
 			newsyncpoints[num_newsyncpoints].ts2 = syncState->syncPoints[0].ts1;
 		num_newsyncpoints++;
 	}
+////////////////////////////////////////////////////////////
 		
 #if AROObjectSynchronizer_C_debugVerbosity >= 1
 	if (rqhi < rqlo) { if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"rq %d : %lld\n", numreq, (long long int)tsreq[numreq-1]); }
@@ -774,7 +765,10 @@ void AROObjectSynchronizerInf_resolveLocalAlignment(
 		binaryReduceRangeWithKey(lo,hi,syncState->syncPoints[i].ts1,*(ts + lo*stride),*(ts + hi*stride),*(ts + pivot*stride));
 		if (hi < lo) { lid2 = -1; tsreq[numreq] = syncState->syncPoints[i].ts1; numreq++; } else lid2 = hi+1;
 #if AROObjectSynchronizer_C_debugVerbosity >= 1
-if (debugLevel >= 1) AROLog_Print(logDEBUG4,0,debugLabel,"chk i: %d %lld | %d %d | %d %d %d %d\n", i, (long long int)syncState->syncPoints[i].ts1, lo, hi, gid1, gid2, lid1, lid2);
+if (debugLevel >= 1) {
+	if (i == 0) AROLog_Print(logDEBUG4,0,debugLabel,"chk i: %d %lld | %d %d | x %d %d %d\n", i, (long long int)syncState->syncPoints[i].ts1, lo, hi, gid2, lid1, lid2);
+	else AROLog_Print(logDEBUG4,0,debugLabel,"chk i: %d %lld | %d %d | %d %d %d %d\n", i, (long long int)syncState->syncPoints[i].ts1, lo, hi, gid1, gid2, lid1, lid2);
+}
 #endif
 		if ((i > 0) && (lid1 > 0) && (lid2 > 0)) {
 #if AROObjectSynchronizer_C_debugVerbosity >= 2
@@ -844,7 +838,7 @@ int AROObjectSynchronizerInf_compactSyncPoints(SyncPoint *spreqBuf, int numspreq
 		        spreqBuf[tnumspreqBuf] = spreq[i]; tnumspreqBuf++; }			
 		} else { // the buffer is full, we have to find someone to replace
 			uint64_t oldestts = spreq[i].ts2; int oldesttsloc = -1;
-			for (j = 0; j < tnumspreqBuf; j++) { 
+			for (j = 0; j < tnumspreqBuf; j++) { if (spreqBuf[j].id1 != 1) { 
 				if (spreqBuf[j].ts2 < oldestts) {
 					oldestts = spreqBuf[j].ts2; oldesttsloc = j;
 				} else if (spreqBuf[j].ts2 == oldestts) {
@@ -852,7 +846,7 @@ int AROObjectSynchronizerInf_compactSyncPoints(SyncPoint *spreqBuf, int numspreq
 					if (spreqBuf[j].ts1 < tmpts1) { 
 						oldestts = spreqBuf[j].ts2; oldesttsloc = j; }
 				}
-			}
+			} }
 			if (oldesttsloc >= 0) spreqBuf[oldesttsloc] = spreq[i];
 		}
 	}

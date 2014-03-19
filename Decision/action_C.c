@@ -8,7 +8,6 @@
 
 #include "action_C.h"
 #include <stdlib.h>
-//#include <algorithm>
 #include "AROUtil_C.h"
 #include "AROLog_C.h"
 
@@ -41,9 +40,6 @@ void free_actionList(ActionList_C* ac_list){
     if (!ac_list) return;
     //Free action_list
     if (ac_list->action_list) {
-        for (unsigned int i= 0; i < ac_list->action_count; i++) {
-               AROLog_Print(logINFO, 1, "", "%d - %lld\n",i, ac_list->action_list[i].ts);
-        }
         free(ac_list->action_list);
     }
     
@@ -67,7 +63,6 @@ void merge_new_action(ActionList_C * ac_list, uint64_t ts){
         AROLog_Print(logERROR, 1, "", "Merge Action ERROR");
         return ;
     }
-    
     int lo = 0; int hi =  ac_list->action_count - 1;
     binaryReduceRangeWithKey(lo,hi,ts,ac_list->action_list[lo].ts,ac_list->action_list[hi].ts,ac_list->action_list[pivot].ts);
     
@@ -116,17 +111,19 @@ void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header){
         ac_list->header_list[lo].ts = ts;
         ac_list->header_list[lo].hash = 0;
         ac_list->header_list[lo].raw_header = raw_header;
-        ac_list->header_list[lo].bb = init_empty_BB(); //TODO: create a default BUNDLE
+        ac_list->header_list[lo].bb = init_empty_BB();
         ac_list->header_list[lo].synced = false;
         
         ac_list->header_count++;
+        
+        AROLog_Print(logINFO, 1, "", "Header get merged\n");
     }
     
 }
 
 void merge_new_header_with_BB(ActionList_C * ac_list, Raw_Header_C *raw_header, BackBundle_C * bb){
     if (!ac_list || !raw_header || !bb) {
-        AROLog_Print(logERROR, 1, "", "Merge BB with Header ERROR");
+        AROLog_Print(logERROR, 1, "", "Merge BB with Header ERROR\n");
         return ;
     }
     int lo = 0; int hi =  ac_list->header_count - 1;
@@ -204,8 +201,8 @@ void free_BB(BackBundle_C * bb){
 
 #pragma mark - Raw Header
 Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb){
-    if (bb || bb->action_count == 0) {
-         AROLog_Print(logERROR, 1, "", "Create Header with empty BB");
+    if (!bb || bb->action_count == 0) {
+        AROLog_Print(logERROR, 1, "", "Create Header with empty BB\n");
         return NULL;
     }
     
@@ -215,7 +212,14 @@ Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb){
     header->size = bb->action_count;
     return header;
 }
-
+Raw_Header_C *copy_raw_header(Raw_Header_C * raw_header){
+    if (!raw_header) return NULL;
+    Raw_Header_C * copy = (Raw_Header_C *) malloc(sizeof(Raw_Header_C));
+    copy->size = raw_header->size;
+    copy->from = raw_header->from;
+    copy->to = raw_header->to;
+    return copy;
+}
 void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb){
     for (unsigned int i = 0; i < bb->action_count; i++) {
         int lo = 0; int hi =  ac_list->action_count - 1;
@@ -249,6 +253,7 @@ BackBundle_C * get_latest_BB(ActionList_C * ac_list){
     if (ac_list->header_count == 0) return NULL;
     else return ac_list->header_list[ac_list->header_count-1].bb;
 }
+
 
 void merge_action_into_BB(BackBundle_C * bb, uint64_t ts){
     int lo = 0; int hi =  bb->action_count - 1;
@@ -320,22 +325,4 @@ bool is_action_in_BB(BackBundle_C * bb, uint64_t ts){
     return false;
 }
 
-
-
-#pragma mark - Header
-
-
-void sync_self_with_unsyced_header(ActionList_C * ac_list){
-    Header_C header = ac_list->header_list[ac_list->header_count-1];
-   
-    if (header.synced) return;
-    
-    for (unsigned int i = 0; i  < ac_list->action_count; i++) {
-        if (!is_action_in_header(&header,&ac_list->action_list[i])) {
-            merge_new_action(ac_list, ac_list->action_list[i].ts);
-        }
-    }
-    update_sync_state(&header);
-    
-}
 

@@ -5,7 +5,7 @@
 
 int main( int argc, char * argv[] ){
     AROLog::Log().OpenLog("/Users/yuehuang/Desktop/Decision/Log","linux_client.log");
-    AROLog::Log().SetLogLevel(logDEBUG);
+    AROLog::Log().SetLogLevel(logINFO);
 
     PriorityPeer * priority_peer = new PriorityPeer();
     std::vector<Peer * > peer_list;
@@ -14,9 +14,6 @@ int main( int argc, char * argv[] ){
         peer_list.push_back(new Peer(i,peer_list,priority_peer));
     }
 
-    //ask others to get what?
-    
-    
     while(std::cin.get()!= 'q'){}
    
     for (unsigned int i = 0; i < peer_size; i++) {

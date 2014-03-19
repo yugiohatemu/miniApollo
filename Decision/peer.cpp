@@ -93,8 +93,8 @@ void Peer::get_online(){
     
     AROLog::Log().Print(logDEBUG1, 1, tag.c_str(), "Get online\n");
     
-    t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 50 * availability + rand() % 5));
-    t_on_off_line.async_wait(boost::bind(&Peer::get_offline,this));
+//    t_on_off_line.expires_from_now(boost::posix_time::seconds((int) 50 * availability + rand() % 5));
+//    t_on_off_line.async_wait(boost::bind(&Peer::get_offline,this));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -64,6 +64,7 @@ BackBundle_C * get_latest_BB(ActionList_C * ac_list);
 void merge_action_into_BB(BackBundle_C * bb, uint64_t ts);
 //Raw_Header
 Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb);
+Raw_Header_C *copy_raw_header(Raw_Header_C * raw_header);
 //Header_C
 void update_sync_state(Header_C * header);
 //Header_C * init_header_with_actionList(Action_C * action, unsigned int action_count);

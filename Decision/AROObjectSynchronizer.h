@@ -16,7 +16,7 @@
 #include "AROProtocols.h"
 #include "AROObjectSynchronizer_C.h"
 
-#define AROObjectSynchronizer_debugVerbosity 2
+#define AROObjectSynchronizer_debugVerbosity 0
 #ifdef ACT_AS_PRIORITY_PEER
 #define AROObjectSynchronizer_reqBufferSize 65536
 #else
@@ -24,7 +24,7 @@
 #endif
 
 class AROObjectSynchronizer {
-
+    
 private:
 	uint64_t *syncIDptr; uint32_t *syncHashptr;
 	int syncIDstride, localSyncRes;
@@ -33,33 +33,39 @@ private:
 #if AROObjectSynchronizer_debugVerbosity >= 1
 	int debugLevel; char debugLabel[31];
 #endif
-
+    
 	uint64_t lastProcessTime, networkPeriod;
 	//uint64_t tsinBuf[AROObjectSynchronizer_reqBufferSize]; int headtsinBuf, numtsinBuf;
 	SyncPoint spinBuf[AROObjectSynchronizer_reqBufferSize]; int headspinBuf, numspinBuf;
 	uint64_t tsreqBuf[AROObjectSynchronizer_reqBufferSize]; int headtsreqBuf, numtsreqBuf;
 	SyncPoint spreqBuf[AROObjectSynchronizer_reqBufferSize]; int headspreqBuf, numspreqBuf;
-
+    
 public:
 	AROObjectSynchronizer(uint64_t *syncIDhead, uint32_t *syncHashhead, int stride, AROSyncResponder *theDelegate);
 	
 	~AROObjectSynchronizer();
 	AROSyncResponder *delegate;
-
+    
 	void setDebugInfo(int debugLevel_, const char *debugLabel_);
 	void setNetworkPeriod(double value);
     
 	void setSyncIDArrays(uint64_t *syncIDhead, uint32_t *syncHashhead, int stride);
-	void getGlobalSyncPoint(SyncPoint *syncPoint, int numts);
+	static void getGlobalSyncPoint(SyncPoint *syncPoint, uint64_t *syncIDhead, uint32_t *syncHashhead, int stride, int numts);
 	void processSyncState(uint64_t *syncIDhead, uint32_t *syncHashhead, int stride, int numts);
 	double getSynchronizerProgress(int numts, double *localToGlobal_, double *globalToNetwork_);
-
+    
 	void notifyOfSyncPoint(SyncPoint *syncPoint);
 	//void notifyOfUpdatedSyncID(uint64_t syncID);
 	bool checkMalformedSyncPoint(SyncPoint *syncPoint);
     //Yue added
     void reset();
     bool isEmpty();
+    double getNetworkPeriod();
+    //Yue added end
+private:
+	void getGlobalSyncPoint(SyncPoint *syncPoint, int numts);
 };
 
 #endif /* defined(__ApolloLinuxClient__AROObjectSynchronizer__) */
+
+

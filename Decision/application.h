@@ -21,12 +21,16 @@
 #include "AROProtocols.h"
 #include <string.h>
 class Peer;
+#define SYN_CHEAT 1;
 
 class Application:public AROSyncResponder{
 
     enum FLAG{
         HEADER_PROCESS_SP,
         HEADER_MERGE_HEADER,
+#ifdef SYN_CHEAT
+        HEADER_COUNT,
+#endif
         APP_PROCESS_SP,
         APP_MERGE_ACTION,
         BB_PROCESS_SP,
@@ -34,9 +38,12 @@ class Application:public AROSyncResponder{
     };
     
     union BLOCK_PAYLOAD{
+#ifdef SYN_CHEAT
+        unsigned int header_count;
+#endif
         uint64_t ts;
         SyncPoint sync_point;
-        Raw_Header_C raw_header;
+        Raw_Header_C *raw_header;
     };
     
     struct Packet{
@@ -72,7 +79,9 @@ class Application:public AROSyncResponder{
     void header_periodicSync(const boost::system::error_code &error);
     void header_processSyncPoint(SyncPoint msgSyncPoint);
     void header_mergeHeader(Raw_Header_C *raw_header);
-    
+#ifdef SYN_CHEAT
+    void header_processCount(unsigned int h_count);
+#endif
     void app_resume();
     void app_pause();
     void app_reset();
