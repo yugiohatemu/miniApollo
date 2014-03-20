@@ -58,22 +58,19 @@ void merge_new_header_with_BB(ActionList_C * ac_list, Raw_Header_C *raw_header, 
 bool is_header_section_synced(ActionList_C * ac_list);
 void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb);
 void sync_header_with_self(ActionList_C * ac_list);
+    
 //BB
 BackBundle_C * init_BB_with_actions(Action_C * actions, unsigned int count);
 BackBundle_C * get_latest_BB(ActionList_C * ac_list);
-void merge_action_into_BB(BackBundle_C * bb, uint64_t ts);
+
 //Raw_Header
 Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb);
 Raw_Header_C *copy_raw_header(Raw_Header_C * raw_header);
+
 //Header_C
 void update_sync_state(Header_C * header);
-//Header_C * init_header_with_actionList(Action_C * action, unsigned int action_count);
-//void sync_self_with_unsyced_header(ActionList_C * ac_list);
+void merge_action_into_header(Header_C * header, uint64_t ts);
 
-//    
-//void merge_existing_action(BackBundle_C * bb, uint64_t ts);
-//
-//void remove_duplicate(ActionList_C * ac_list);
     
 #ifdef __cplusplus
 }
