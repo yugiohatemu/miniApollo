@@ -29,10 +29,14 @@ typedef struct {
 }BackBundle_C;
     
 typedef struct{
-    uint64_t from;
-    uint64_t to;
-    unsigned int size;
+    //modified into
+    uint64_t * confidence_;
+    uint64_t * outsider_;
+    unsigned int confidence_count;
+    unsigned int outsider_count;
+    //actually...I could just manually manipulate there
 }Raw_Header_C;
+    
     
 typedef struct {
     uint64_t ts; //use this as a way to make header

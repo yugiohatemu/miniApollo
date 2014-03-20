@@ -15,7 +15,7 @@ const int DEFAULT_HEADER_CAPACITY = 10;
 const int DEFAULT_SYNCHORNIZER_CAPATICY = 50;
 
 bool is_equal(Raw_Header_C * rh1, Raw_Header_C * rh2);
-bool is_less_than(Raw_Header_C * rh1, Raw_Header_C * rh2);
+//bool is_less_than(Raw_Header_C * rh1, Raw_Header_C * rh2);
 void free_BB(BackBundle_C * bb);
 BackBundle_C * init_empty_BB();
 #pragma mark - Action List
@@ -100,7 +100,7 @@ void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header){
     }
     
     int lo = 0; int hi =  ac_list->header_count - 1;
-    uint64_t ts = raw_header->from;
+    uint64_t ts = raw_header->outsider_[0];
     binaryReduceRangeWithKey(lo,hi,ts,ac_list->header_list[lo].ts,ac_list->header_list[hi].ts,ac_list->header_list[pivot].ts);
     
     if (lo > hi) {
@@ -120,7 +120,7 @@ void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header){
         ac_list->header_list[lo].ts = ts;
         ac_list->header_list[lo].hash = 0;
         ac_list->header_list[lo].raw_header = raw_header;
-        ac_list->header_list[lo].bb = init_BB_with_capacity(raw_header->size);
+        ac_list->header_list[lo].bb = init_BB_with_capacity(raw_header->confidence_count + raw_header->outsider_count);
         ac_list->header_list[lo].synced = false;
         
         ac_list->header_count++;
@@ -136,7 +136,7 @@ void merge_new_header_with_BB(ActionList_C * ac_list, Raw_Header_C *raw_header, 
         return ;
     }
     int lo = 0; int hi =  ac_list->header_count - 1;
-    uint64_t ts = raw_header->from;
+    uint64_t ts = raw_header->outsider_[0];
     binaryReduceRangeWithKey(lo,hi,ts,ac_list->header_list[lo].ts,ac_list->header_list[hi].ts,ac_list->header_list[pivot].ts);
     
     if (lo > hi) {
@@ -190,7 +190,6 @@ void merge_action_into_header(Header_C * header, uint64_t ts){
         
         bb->action_count++;
     }
-    
 }
 
 
@@ -214,6 +213,8 @@ BackBundle_C * init_empty_BB(){
 BackBundle_C * init_BB_with_actions(Action_C * action_list, unsigned int count){
     BackBundle_C * bb = (BackBundle_C *) malloc(sizeof(BackBundle_C));
     
+    
+    
     bb->action_count = count;
     bb->action_list = (Action_C *) malloc(sizeof(Action_C) * count);
     
@@ -232,28 +233,11 @@ void free_BB(BackBundle_C * bb){
     free(bb);
 }
 
-#pragma mark - Raw Header
-Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb){
-    if (!bb || bb->action_count == 0) {
-        AROLog_Print(logERROR, 1, "", "Create Header with empty BB\n");
-        return NULL;
-    }
-    
-    Raw_Header_C * header = (Raw_Header_C *) malloc(sizeof(Raw_Header_C));
-    header->from = bb->action_list[0].ts;
-    header->to = bb->action_list[bb->action_count - 1].ts;
-    header->size = bb->action_count;
-    return header;
+BackBundle_C * get_latest_BB(ActionList_C * ac_list){
+    if (ac_list->header_count == 0) return NULL;
+    else return ac_list->header_list[ac_list->header_count-1].bb;
 }
 
-Raw_Header_C *copy_raw_header(Raw_Header_C * raw_header){
-    if (!raw_header) return NULL;
-    Raw_Header_C * copy = (Raw_Header_C *) malloc(sizeof(Raw_Header_C));
-    copy->size = raw_header->size;
-    copy->from = raw_header->from;
-    copy->to = raw_header->to;
-    return copy;
-}
 void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb){
     for (unsigned int i = 0; i < bb->action_count; i++) {
         int lo = 0; int hi =  ac_list->action_count - 1;
@@ -268,27 +252,77 @@ void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb){
             
             ac_list->action_list[prev].ts = ac_list->action_list[current].ts;
             ac_list->action_list[prev].hash = ac_list->action_list[current].hash;
-
+            
             prev++;
         }
         current++;
     }
     //update real count
-     AROLog_Print(logDEBUG, 1, "", "Action count %d vs bb count %d\n", ac_list->action_count, bb->action_count);
+    AROLog_Print(logDEBUG, 1, "", "Action count %d vs bb count %d\n", ac_list->action_count, bb->action_count);
     ac_list->action_count -= bb->action_count;
     AROLog_Print(logDEBUG, 1, "", "Action is reduced to %d\n", ac_list->action_count);
 }
 
+#pragma mark - Raw Header
+Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb){
+    if (!bb || bb->action_count <= 3) {
+        AROLog_Print(logERROR, 1, "", "Create Header with empty BB\n");
+        return NULL;
+    }
+
+#warning we manually take the front and back away and cast them as outsiders
+    Raw_Header_C * header = (Raw_Header_C *) malloc(sizeof(Raw_Header_C));
+    header->confidence_count = bb->action_count - 2;
+    header->confidence_ = (uint64_t *) malloc(sizeof(uint64_t) * header->confidence_count);
+    for (unsigned int i = 0; i < header->confidence_count; i++) header->confidence_[i] = bb->action_list[i+1].ts;
+    
+    header->outsider_count = 2;
+    header->outsider_ = (uint64_t *) malloc(sizeof(uint64_t) * header->outsider_count);
+    header->outsider_[0] = bb->action_list[0].ts;
+    header->outsider_[1] = bb->action_list[bb->action_count - 1].ts;
+    
+    return header;
+}
+
+Raw_Header_C *copy_raw_header(Raw_Header_C * raw_header){
+    if (!raw_header) return NULL;
+    Raw_Header_C * copy = (Raw_Header_C *) malloc(sizeof(Raw_Header_C));
+    copy->confidence_count = raw_header->confidence_count - 2;
+    copy->confidence_ = (uint64_t *) malloc(sizeof(uint64_t) * copy->confidence_count);
+    for (unsigned int i = 0; i < copy->confidence_count; i++) {
+        copy->confidence_[i] = raw_header->confidence_[i];
+    }
+    
+    copy->outsider_count = raw_header->confidence_count;
+    copy->outsider_ = (uint64_t *) malloc(sizeof(uint64_t) * copy->outsider_count);
+    for (unsigned int i = 0; i < copy->outsider_count; i++) {
+        copy->outsider_[i] = raw_header->outsider_[i];
+    }
+    return copy;
+}
+
+bool is_equal(Raw_Header_C * rh1, Raw_Header_C * rh2){
+    if (!rh1 || !rh2) return false;
+    //    AROLog_Print(logINFO, 1, "", "%lld- %lld %d vs %lld-%lld %d\n", rh1->from,rh1->to, rh1->size,rh2->from,rh2->to, rh2->size);
+    if (rh1->confidence_count != rh2->confidence_count || rh1->outsider_count != rh2->outsider_count) return false;
+    for (unsigned int i = 0; i < rh1->confidence_count; i++) {
+        if (rh1->confidence_[i]!= rh2->confidence_[i]) return false;
+    }
+    for (unsigned int i = 0; i < rh1->outsider_count; i++) {
+        if (rh1->outsider_[i]!= rh2->outsider_[i]) return false;
+    }
+    return true;
+}
+
 bool is_action_likely_in_bb(Raw_Header_C * raw_header, uint64_t ts){
-    return (raw_header->from <= ts && ts <= raw_header->to);
+    for (unsigned int i =0 ; i < raw_header->confidence_count; i++) {
+        if (ts == raw_header->confidence_[i]) return true;
+    }
+    
+    return false;
 }
 
-#pragma mark - BackBundle
-BackBundle_C * get_latest_BB(ActionList_C * ac_list){
-    if (ac_list->header_count == 0) return NULL;
-    else return ac_list->header_list[ac_list->header_count-1].bb;
-}
-
+#pragma mark - Header
 
 void update_sync_state(Header_C * header){
     Raw_Header_C * current_raw_header = init_raw_header_with_BB(header->bb);
@@ -321,18 +355,7 @@ bool is_raw_header_in_actionList(ActionList_C * ac_list,  Raw_Header_C * raw_hea
     return false;
 }
 
-bool is_equal(Raw_Header_C * rh1, Raw_Header_C * rh2){
-    if (!rh1 || !rh2) return false;
-    AROLog_Print(logINFO, 1, "", "%lld- %lld %d vs %lld-%lld %d\n", rh1->from,rh1->to, rh1->size,rh2->from,rh2->to, rh2->size);
-    return rh1->from == rh2->from && rh1->to == rh2->to && rh1->size == rh2->size;
-}
 
-bool is_less_than(Raw_Header_C * rh1, Raw_Header_C * rh2){
-    if (!rh1||!rh2) {
-        return false;
-    }
-    return rh1->from < rh2->from;
-}
 
 bool is_action_in_BB(BackBundle_C * bb, uint64_t ts){
     for (unsigned int i = 0; i < bb->action_count; i++) {

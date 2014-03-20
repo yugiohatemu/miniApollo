@@ -9,7 +9,6 @@
 #ifndef __Decision__peer__
 #define __Decision__peer__
 
-#include "priorityPeer.h"
 #include "application.h"
 #include <string.h>
 
@@ -25,15 +24,20 @@ class Peer{
         BEING_BULLIED,
     };
 public:
-    unsigned int pid;
-    float availability;
-    Peer(unsigned int pid,std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
-    ~Peer();
+    enum PEER_TYPE{
+        NEW_PEER,
+        BAD_PEER,
+        NORMAL_PEER,
+        GOOD_PEER,
+        PRIORITY_PEER,
+    };
     
-    void get_bullyed(Message m);
-
+    
+    Peer(unsigned int pid,std::vector<Peer *> &peer_list);
+    ~Peer();
+    void set_peer_type(PEER_TYPE peer_type);
+    
     Application * application;
-//    BB_Synchronizer * bb_synchronizer;
     boost::asio::io_service io_service;
     boost::system::error_code error;
     
@@ -43,6 +47,7 @@ public:
     }
     void start_bully(const boost::system::error_code &e);
     void stop_bully();
+    void get_online();
 private:
     template <typename TFunc>
     void execute(TFunc func){
@@ -50,10 +55,11 @@ private:
     }
     
     std::string tag;
-    
     std::vector<Peer *> &peer_list;
-    PriorityPeer * priority_peer;
     State state;
+    unsigned int pid;
+    float availability;
+    PEER_TYPE peer_type;
     
     boost::asio::io_service::work work;
 	boost::asio::io_service::strand strand;
@@ -65,21 +71,20 @@ private:
     boost::asio::deadline_timer t_bully_other;
     boost::asio::deadline_timer t_being_bully;
     
-    
-    boost::mutex sync_lock;
+    boost::mutex mutex;
     
     void cancel_all();
     
     void new_feed(const boost::system::error_code &e);
     void read_feed();
     
-    void get_online();
+    
     void get_offline();
     bool online;
     
-    
+    void get_bullyed(Message m);
     void finish_bully(const boost::system::error_code &e);
-   
+    
 };
 
 #endif /* defined(__Decision__peer__) */

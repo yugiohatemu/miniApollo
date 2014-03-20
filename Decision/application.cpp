@@ -22,12 +22,11 @@ const int T_APP_SYNC_TIMEOUT = 1;
 const int T_BB_SYNC_TIMEOUT = 5;
 const int T_HEADER_SYNC_TIMEOUT = 5;
 
-Application::Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list,PriorityPeer * priority_peer):
+Application::Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list):
     io_service(io_service),
     strand(strand),
     peer_list(peer_list),
     pid(pid),
-    priority_peer(priority_peer),
     t_app_sync(io_service, boost::posix_time::seconds(0)),
     t_bb_sync(io_service, boost::posix_time::seconds(0)),
     t_try_bb(io_service, boost::posix_time::seconds(0)),
@@ -59,7 +58,7 @@ Application::~Application(){
     AROLog_Print(logINFO, 1, tag.c_str(), "Header %d\n", ac_list->header_count);
     for (unsigned int i = 0; i < ac_list->header_count; i++) {
         Raw_Header_C * raw_header =ac_list->header_list[i].raw_header;
-        AROLog_Print(logINFO,1,tag.c_str(), "Raw-Header %d %lld %lld -- %c\n",raw_header->size, raw_header->from, raw_header->to, ac_list->header_list[i].synced ? 'Y':'N');
+        AROLog_Print(logINFO,1,tag.c_str(), "Raw-Header %d %lld %lld -- %c\n",raw_header->confidence_count + raw_header->outsider_count, raw_header->outsider_[0], raw_header->outsider_[1], ac_list->header_list[i].synced ? 'Y':'N');
         BackBundle_C * bb = ac_list->header_list[i].bb;
         if (bb) {
             for (unsigned int j = 0; j < bb->action_count; j++) {

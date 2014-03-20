@@ -15,7 +15,6 @@
 #include <inttypes.h>
 #include <vector>
 
-#include "priorityPeer.h"
 #include "action_C.h"
 #include "AROObjectSynchronizer.h"
 #include "AROProtocols.h"
@@ -61,7 +60,6 @@ class Application:public AROSyncResponder{
     boost::asio::deadline_timer t_try_bb;
     
     ActionList_C * ac_list;
-    PriorityPeer * priority_peer;
     std::vector<Peer *> &peer_list; //connection_pool in fact
     boost::mutex mutex;
     
@@ -92,7 +90,7 @@ class Application:public AROSyncResponder{
     void notificationOfSyncAchieved(double networkPeriod, int code, void *sender);
     
 public:
-    Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
+    Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list);
     ~Application();
    
     AROObjectSynchronizer * header_syncrhonizer;
