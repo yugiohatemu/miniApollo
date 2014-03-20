@@ -26,15 +26,12 @@ class Peer;
 class Application:public AROSyncResponder{
 
     enum FLAG{
-        HEADER_PROCESS_SP,
-        HEADER_MERGE_HEADER,
+        HEADER_PROCESS_SP, HEADER_MERGE_HEADER,
 #ifdef SYN_CHEAT
         HEADER_COUNT,
 #endif
-        APP_PROCESS_SP,
-        APP_MERGE_ACTION,
-        BB_PROCESS_SP,
-        BB_MERGE_ACTION,
+        APP_PROCESS_SP,APP_MERGE_ACTION,
+        BB_PROCESS_SP,BB_MERGE_ACTION,
     };
     
     union BLOCK_PAYLOAD{
@@ -68,9 +65,7 @@ class Application:public AROSyncResponder{
     std::vector<Peer *> &peer_list; //connection_pool in fact
     boost::mutex mutex;
     
-    bool GLOBAL_SYNCED;
-    bool BB_ing;
-    
+//    State state;
     std::string tag;
     ////////////////////////////////////////////////////////////////////////////////
     void processMessage(Packet p);
@@ -82,23 +77,19 @@ class Application:public AROSyncResponder{
 #ifdef SYN_CHEAT
     void header_processCount(unsigned int h_count);
 #endif
+    
     void app_resume();
-    void app_pause();
-    void app_reset();
     void app_periodicSync(const boost::system::error_code &error);
     void app_processSyncPoint(SyncPoint msgSyncPoint);
     void app_mergeAction(uint64_t ts);
     
     void bb_resume();
-    void bb_pause();
-    void bb_reset();
     void bb_periodicSync(const boost::system::error_code &error);
     void bb_processSyncPoint(SyncPoint msgSyncPoint);
+    void bb_mergeAction(uint64_t ts);
     
     void sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *sender);
     void notificationOfSyncAchieved(double networkPeriod, int code, void *sender);
-    
-    void bb_mergeAction(uint64_t ts);
     
 public:
     Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list, PriorityPeer * priority_peer);
@@ -114,6 +105,7 @@ public:
     
     void try_bb(boost::system::error_code error);
     void pack_full_bb();
-   
+    
+    bool is_header_fully_synced();
 };
 #endif /* defined(__Decision__synchronizer__) */
