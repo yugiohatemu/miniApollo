@@ -274,9 +274,9 @@ void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb){
         current++;
     }
     //update real count
-     AROLog_Print(logINFO, 1, "", "Action count %d vs bb count %d\n", ac_list->action_count, bb->action_count);
+     AROLog_Print(logDEBUG, 1, "", "Action count %d vs bb count %d\n", ac_list->action_count, bb->action_count);
     ac_list->action_count -= bb->action_count;
-    AROLog_Print(logINFO, 1, "", "Action is reduced to %d\n", ac_list->action_count);
+    AROLog_Print(logDEBUG, 1, "", "Action is reduced to %d\n", ac_list->action_count);
 }
 
 bool is_action_likely_in_bb(Raw_Header_C * raw_header, uint64_t ts){
@@ -293,8 +293,8 @@ BackBundle_C * get_latest_BB(ActionList_C * ac_list){
 void update_sync_state(Header_C * header){
     Raw_Header_C * current_raw_header = init_raw_header_with_BB(header->bb);
     header->synced =  is_equal(header->raw_header, current_raw_header);
-    AROLog_Print(logINFO, 1, "", "--%c--\n", header->synced ? 'Y':'N');
-    free(current_raw_header);
+    AROLog_Print(logDEBUG, 1, "", "--%c--\n", header->synced ? 'Y':'N');
+    if (current_raw_header) free(current_raw_header);
 }
 
 void sync_header_with_self(ActionList_C * ac_list){
@@ -322,7 +322,7 @@ bool is_raw_header_in_actionList(ActionList_C * ac_list,  Raw_Header_C * raw_hea
 }
 
 bool is_equal(Raw_Header_C * rh1, Raw_Header_C * rh2){
-//    if (!rh1 || !rh2) return false;
+    if (!rh1 || !rh2) return false;
     AROLog_Print(logINFO, 1, "", "%lld- %lld %d vs %lld-%lld %d\n", rh1->from,rh1->to, rh1->size,rh2->from,rh2->to, rh2->size);
     return rh1->from == rh2->from && rh1->to == rh2->to && rh1->size == rh2->size;
 }

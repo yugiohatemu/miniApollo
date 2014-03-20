@@ -168,11 +168,10 @@ void Application::notificationOfSyncAchieved(double networkPeriod, int code, voi
             AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "Header Sync achieved at %llf\n", networkPeriod);
             app_resume();
         }else{
-            bb_resume();
             t_app_sync.cancel();
             strand.dispatch(boost::bind(&Application::app_periodicSync,this,boost::asio::error::operation_aborted));
         }
-      
+        bb_resume();
         header_syncrhonizer->setNetworkPeriod(networkPeriod);
     }else if (sender == synchronizer) {
         AROLog::Log().Print(logINFO,1,tag.c_str(),"App Sync achieved at %llf\n", networkPeriod);
@@ -201,8 +200,6 @@ void Application::header_periodicSync(const boost::system::error_code &error){
 void Application::header_processCount(unsigned int header_count){
     if(header_count == ac_list->header_count){
         notificationOfSyncAchieved(header_syncrhonizer->getNetworkPeriod(), 0, header_syncrhonizer);
-    }else{
-        AROLog::Log().Print(logINFO, 1, "", "--------------it Happens, so what?\n");
     }
 }
 #endif
@@ -278,7 +275,7 @@ void Application::app_resume(){
     if (t_app_sync.expires_from_now(boost::posix_time::seconds(T_APP_SYNC_TIMEOUT)) <= 0) {
         strand.dispatch(boost::bind(&Application::app_periodicSync,this,error));
         synchronizer->setNetworkPeriod(0.5);
-        AROLog_Print(logINFO, 1, tag.c_str(), "------------SYNC RESUME--------------\n");
+//        AROLog_Print(logINFO, 1, tag.c_str(), "------------SYNC RESUME--------------\n");
     }
     
     if (t_try_bb.expires_from_now(boost::posix_time::seconds(T_TRY_BB_TIMEOUT)) <= 0) {
@@ -303,8 +300,6 @@ void Application::app_periodicSync(const boost::system::error_code &error){
 }
 
 void Application::app_processSyncPoint(SyncPoint msgSyncPoint){
-    //Ask for between certain range
-    if (!is_header_fully_synced()) return ; //???
     
     if ((msgSyncPoint.id1 == 0) && (msgSyncPoint.id2 == 0)) {
         
@@ -354,7 +349,7 @@ void Application::try_bb(boost::system::error_code e){ //try bb
 }
 
 void Application::pack_full_bb(){ //pack complete bb
-    if (!is_header_fully_synced()) {
+    if (!is_header_fully_synced() || BB_SIZE > ac_list->action_count) { //TODO: the latter part should be changed
         strand.dispatch(boost::bind(&Peer::stop_bully, peer_list[pid]));
         for (unsigned int i = 0; i < peer_list.size(); i++) {
             if (pid != i) peer_list[i]->enqueue(boost::protect(boost::bind(&Peer::stop_bully, peer_list[i])));
@@ -378,6 +373,7 @@ void Application::pack_full_bb(){ //pack complete bb
         bb_synchronizer->reset();
     }
     resume();
+    //TODO: want to change here such that we get a request from a BB_Synchronizer and we wrap around it
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -401,13 +397,9 @@ void Application::bb_resume(){
 void Application::bb_periodicSync(const boost::system::error_code &e){
     if(e == boost::asio::error::operation_aborted ) return;
     
-    if(bb_synchronizer->isEmpty()) return;
-    
-    AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "BB-Periodic sync\n");
-    
     BackBundle_C * bb = get_latest_BB(ac_list);
     if (!bb) return;
-    
+    AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "BB-Periodic sync\n");
     bb_synchronizer->processSyncState(&bb->action_list[0].ts, &bb->action_list[0].hash, sizeof(Action_C) / sizeof(uint64_t), bb->action_count);
     
     t_bb_sync.expires_from_now(boost::posix_time::seconds(T_BB_SYNC_TIMEOUT));
@@ -425,9 +417,12 @@ void Application::bb_mergeAction(uint64_t ts){
     update_sync_state(&header);
     
     if (header.synced) {
-        AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "BB is synced\n");
+        
         boost::mutex::scoped_lock lock(mutex);
+        pause();
         remove_duplicate_actions(ac_list, header.bb);
+        resume();
+        AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "BB is synced\n");
     }
 }
 
