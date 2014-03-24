@@ -12,8 +12,8 @@
 #define SYN_CHEAT 1;
 const unsigned int BULLY_TIME_OUT = 4;
 const int DEFAULT_HEADER_CAPACITY = 10;
-const int DEFAULT_SYNCHORNIZER_CAPATICY = 50;
-const unsigned int BB_SIZE = 500;
+const int DEFAULT_SYNCHORNIZER_CAPATICY = 800;
+const unsigned int BB_SIZE = 100;
 const unsigned int T_TRY_BB_TIMEOUT = 3;
 const unsigned int T_APP_SYNC_TIMEOUT = 1;
 const unsigned int T_BB_SYNC_TIMEOUT = 2;

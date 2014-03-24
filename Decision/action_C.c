@@ -14,10 +14,8 @@
 #include <math.h>
 
 bool is_equal(Raw_Header_C * rh1, Raw_Header_C * rh2);
+BackBundle_C * init_BB_with_capacity(unsigned int count);
 
-void free_BB(BackBundle_C * bb);
-BackBundle_C * init_empty_BB();
-void print_raw_header(Raw_Header_C * raw_header);
 #pragma mark - Action List
 ActionList_C* init_default_actionList(){
     ActionList_C * ac_list = (ActionList_C*) malloc(sizeof(ActionList_C));
@@ -36,13 +34,20 @@ ActionList_C* init_default_actionList(){
     return ac_list;
 }
 
+void load_action_from_cache(ActionList_C* ac_list,uint64_t * ts, unsigned int n){
+    AROLog_Print(logINFO, 0, "", "%d %lld-%lld\n",n,ts[0],ts[n-1]);
+    for (unsigned int  i = 0; i < n; i++) {
+        ac_list->action_list[i].ts = ts[i];
+    }
+    ac_list->action_count = n;
+}
+
 void free_actionList(ActionList_C* ac_list){
     if (!ac_list) return;
     //Free action_list
     if (ac_list->action_list) {
         free(ac_list->action_list);
     }
-    
     
     //Free header_list
     if (ac_list->header_list) {
@@ -88,13 +93,7 @@ void merge_new_action(ActionList_C * ac_list, uint64_t ts){
     }
 }
 
-BackBundle_C * init_BB_with_capacity(unsigned int count){
-    BackBundle_C * bb = (BackBundle_C *) malloc(sizeof(BackBundle_C));
-    
-    bb->action_count = 0;
-    bb->action_list = (Action_C *) malloc(sizeof(Action_C) * count);
-    return bb;
-}
+
 
 //Cheat it now
 void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header){
@@ -224,29 +223,49 @@ void update_sync_state(ActionList_C * ac_list){
 
 
 #pragma mark - BackBundle
-BackBundle_C * init_BB_with_sampled_randomization(Action_C * action_list){
+int cmpfunc (const void * a, const void * b){
+    Action_C * action_a = (Action_C *) a;
+    Action_C * action_b = (Action_C *) b;
+    
+    if (action_a->ts >  action_b->ts) return  1;
+    if (action_a->ts <  action_b->ts) return  -1;
+    return  0;
+}
+
+BackBundle_C * init_BB_with_sampled_randomization(ActionList_C * ac_list){
     BackBundle_C * bb = (BackBundle_C *) malloc(sizeof(BackBundle_C));
     bb->action_count = BB_SIZE;
     bb->action_list = (Action_C *) malloc(sizeof(Action_C) * bb->action_count);
 
     //copy the 500 first
     for (unsigned int i = 0; i < bb->action_count; i++) {
-        bb->action_list[i].ts = action_list[i].ts;
-        bb->action_list[i].hash = action_list[i].hash;
+        bb->action_list[i].ts = ac_list->action_list[i].ts;
+        bb->action_list[i].hash = ac_list->action_list[i].hash;
     }
-    
+   
     //swaping some of them
-    unsigned int random_count = BB_SIZE * RADOMIZATION;
+    unsigned int random_count = bb->action_count * RADOMIZATION;
+    unsigned int left_over = ac_list->action_count - bb->action_count;
+    AROLog_Print(logINFO, 1, "", "BB %d  - Sampled %d\n",random_count, left_over);
+
     for (unsigned int i = 0; i < random_count; i++) {
-        unsigned int r1 = random() % BB_SIZE;
-        unsigned int r2 = random() % bb->action_count;
-        bb->action_list[r2].ts = action_list[r1].ts;
-        bb->action_list[r2].hash = action_list[r1].hash;
+        unsigned int r1 = random() % bb->action_count;
+        unsigned int r2 = (random() % left_over) + BB_SIZE;
+//        AROLog_Print(logINFO, 1, "", "%d %lld - %d %lld\n", r1, ac_list->action_list[r2].ts,r2,bb->action_list[r1].ts);
+        bb->action_list[r1].ts = ac_list->action_list[r2].ts;
     }
     
+    qsort(bb->action_list, bb->action_count, sizeof(Action_C), cmpfunc);
     return bb;
 }
 
+BackBundle_C * init_BB_with_capacity(unsigned int count){
+    BackBundle_C * bb = (BackBundle_C *) malloc(sizeof(BackBundle_C));
+    
+    bb->action_count = 0;
+    bb->action_list = (Action_C *) malloc(sizeof(Action_C) * count);
+    return bb;
+}
 
 void free_BB(BackBundle_C * bb){
     if (!bb) return;
@@ -289,8 +308,9 @@ void print_raw_header(Raw_Header_C * raw_header){
         return;
     }
   
-    AROLog_Print(logINFO, 1, "", "Conf size %d\% %d, %lld - %lld\nOutlier size %d",raw_header->percent,raw_header->confidence_count,raw_header->confidence_low, raw_header->confidence_high,raw_header->outliers);
-
+    AROLog_Print(logINFO, 1, "", "Conf size %d percent %d, %lld - %lld\n",raw_header->percent,raw_header->confidence_count,raw_header->confidence_low, raw_header->confidence_high);
+    AROLog_Print(logINFO, 1, "", "Outlier size %d\n",raw_header->outlier_count);
+    
     for (unsigned int i = 0 ; i < raw_header->outlier_count; i++) {
         AROLog_Print(logINFO, 1, "", "%d - %lld\n", i, raw_header->outliers[i]);
     }
@@ -316,33 +336,32 @@ void set_fence(Raw_Header_C * raw_header,  BackBundle_C  * bb, float percent){
 
     for (; bb->action_list[inner_low_ind].ts < inner_low && inner_low_ind < bb->action_count; inner_low_ind++) {}
     for (; bb->action_list[inner_high_ind].ts > inner_high && inner_high_ind >= inner_low_ind ; inner_high_ind--) {}
-    
+
     raw_header->confidence_low = bb->action_list[inner_low_ind].ts;
     raw_header->confidence_high = bb->action_list[inner_high_ind].ts;
-    raw_header->outlier_count = bb->action_count- (inner_high_ind - inner_low_ind);
+    raw_header->outlier_count = bb->action_count- (inner_high_ind - inner_low_ind) - 1;
     raw_header->confidence_count = bb->action_count - raw_header->outlier_count;
+    
 }
 
 Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb){
-    if (!bb || bb->action_count <= 3) {
+    if (!bb) {
         AROLog_Print(logERROR, 1, "", "Create Header with empty or not larger enough BB\n");
         return NULL;
     }
 
     Raw_Header_C * header = (Raw_Header_C *) malloc(sizeof(Raw_Header_C));
     //TODO: just a easy check for now
-    float percentage = 0.25f;
+    float percentage = 0.35f;
     set_fence(header, bb, percentage);
-    if (header->outlier_count > 100) {
-        percentage += 0.05;
-        set_fence(header, bb, percentage);
-    }
     header->percent = (uint8_t)(percentage * 100);
     //Actually picking out outliers
     header->outliers = (uint64_t *) malloc(sizeof(uint64_t) * header->outlier_count);
-    for (unsigned int i = 0; i < header->outlier_count; i++) {
+
+    for (unsigned int i = 0, j = 0; i < bb->action_count; i++) {
         if (bb->action_list[i].ts < header->confidence_low || bb->action_list[i].ts > header->confidence_high ) {
-            header->outliers[i] = bb->action_list[i].ts;
+            header->outliers[j] = bb->action_list[i].ts;
+            j++;
         }
     }
     
@@ -359,7 +378,6 @@ Raw_Header_C *copy_raw_header(Raw_Header_C * raw_header){
     copy->outlier_count = raw_header->outlier_count;
     
     copy->outliers = (uint64_t *) malloc(sizeof(uint64_t) * raw_header->outlier_count);
-    
     for (unsigned int i = 0; i < copy->outlier_count; i++) copy->outliers[i] = raw_header->outliers[i];
     
     return copy;

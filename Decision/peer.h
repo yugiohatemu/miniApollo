@@ -45,10 +45,12 @@ public:
     void enqueue(TFunc func){
         io_service.post(strand.wrap(boost::bind( &Peer::execute<TFunc>, this, func )));
     }
-    void start_bully(const boost::system::error_code &e);
-    void stop_bully();
+    void load_cache(uint64_t * ts, unsigned int n);
     void get_online();
     void get_offline();
+    void start_bully(const boost::system::error_code &e);
+    void stop_bully();
+    void test();
 private:
     template <typename TFunc>
     void execute(TFunc func){

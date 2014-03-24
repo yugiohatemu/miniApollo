@@ -123,6 +123,7 @@ public:
     AROObjectSynchronizer * synchronizer;
     AROObjectSynchronizer * bb_synchronizer;
 
+    ActionList_C * get_actionList();
     void pause();
     void resume();
     void add_new_action();

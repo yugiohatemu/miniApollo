@@ -57,6 +57,7 @@ typedef struct{
     
 //ActionList
 ActionList_C* init_default_actionList();
+void load_action_from_cache(ActionList_C* ac_list,uint64_t * ts, unsigned int n);
 void free_actionList(ActionList_C* ac_list);
 void merge_new_action(ActionList_C * ac_list, uint64_t ts);
 void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header);
@@ -65,10 +66,11 @@ bool is_header_section_synced(ActionList_C * ac_list);
 void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb);
 void sync_header_with_self(ActionList_C * ac_list);
 void update_sync_state(ActionList_C * ac_list );
+    
 //BB
-BackBundle_C * init_BB_with_sampled_randomization(Action_C * action_list);
+BackBundle_C * init_BB_with_sampled_randomization(ActionList_C * ac_list);
 BackBundle_C * get_latest_BB(ActionList_C * ac_list);
-
+void free_BB(BackBundle_C * bb);
 //Raw_Header
 Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb);
 Raw_Header_C *copy_raw_header(Raw_Header_C * raw_header);

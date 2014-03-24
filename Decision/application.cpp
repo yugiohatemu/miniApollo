@@ -50,22 +50,22 @@ Application::Application(boost::asio::io_service &io_service, boost::asio::io_se
 }
 
 Application::~Application(){
-    AROLog_Print(logINFO, 1, tag.c_str(), "Header %d\n", ac_list->header_count);
-    for (unsigned int i = 0; i < ac_list->header_count; i++) {
-        AROLog_Print(logINFO, 1, tag.c_str(), "ts for header %lld\n",ac_list->header_list[i].ts);
-        Raw_Header_C * raw_header =ac_list->header_list[i].raw_header;
-        print_raw_header(raw_header);
-        BackBundle_C * bb = ac_list->header_list[i].bb;
-        if (bb) {
-            for (unsigned int j = 0; j < bb->action_count; j++) {
-                AROLog_Print(logINFO, 1, tag.c_str(), "BB %d - %lld\n",j,bb->action_list[j].ts);
-            }
-        }
-    }
-    AROLog_Print(logINFO, 1, tag.c_str(), "App Region\n");
-    for (unsigned int i = 0; i < ac_list->action_count; i++) {
-        AROLog_Print(logINFO, 1, tag.c_str(), "App %d - %lld\n", i, ac_list->action_list[i].ts);
-    }
+//    AROLog_Print(logINFO, 1, tag.c_str(), "Header %d\n", ac_list->header_count);
+//    for (unsigned int i = 0; i < ac_list->header_count; i++) {
+//        AROLog_Print(logINFO, 1, tag.c_str(), "ts for header %lld\n",ac_list->header_list[i].ts);
+//        Raw_Header_C * raw_header =ac_list->header_list[i].raw_header;
+//        print_raw_header(raw_header);
+//        BackBundle_C * bb = ac_list->header_list[i].bb;
+//        if (bb) {
+//            for (unsigned int j = 0; j < bb->action_count; j++) {
+//                AROLog_Print(logINFO, 1, tag.c_str(), "BB %d - %lld\n",j,bb->action_list[j].ts);
+//            }
+//        }
+//    }
+//    AROLog_Print(logINFO, 1, tag.c_str(), "App Region\n");
+//    for (unsigned int i = 0; i < ac_list->action_count; i++) {
+//        AROLog_Print(logINFO, 1, tag.c_str(), "App %d - %lld\n", i, ac_list->action_list[i].ts);
+//    }
     
     if (header_syncrhonizer) delete header_syncrhonizer;
     if (bb_synchronizer) delete bb_synchronizer;
@@ -98,6 +98,10 @@ void Application::broadcastToPeers(Packet *packet){
         if (i!=pid && peer_list[i]) peer_list[i]->enqueue(boost::protect(boost::bind(&Application::processMessage,peer_list[i]->application,p)));
     }
     delete packet;
+}
+
+ActionList_C* Application::get_actionList(){
+    return ac_list;
 }
 
 void Application::processMessage(Packet *p){
@@ -316,14 +320,6 @@ void Application::app_processSyncPoint(SyncPoint msgSyncPoint){
                 Packet *p = new Packet( APP_PROCESS_SP); p->content->sync_point = global_pic;
                 broadcastToPeers(p);
             }
-//            else{
-//                SyncPoint global_pic;
-//                global_pic.id1 = global_pic.id2 = global_pic.ts1 = global_pic.ts2 = 0;
-//                global_pic.hash = global_pic.res = 0;
-//                Packet packet; packet.flag = HEADER_PROCESS_SP; packet.content.sync_point = global_pic;
-//                broadcastToPeers(packet);
-//                AROLog::Log().Print(logINFO,1,tag.c_str(),"Responding to global pic with %d-%d %lld-%lld\n",global_pic.id1,global_pic.id2,global_pic.ts1,global_pic.ts2);
-//            }
         } else if (ac_list->action_count > 0) { //current region not empty
             
             int lo = 0, hi = ac_list->action_count - 1;
@@ -366,7 +362,7 @@ void Application::pack_full_bb(){ //pack complete bb
     {
         boost::mutex::scoped_lock lock(mutex);
         AROLog::Log().Print(logINFO, 1, tag.c_str(), "Pack full BB\n");
-        BackBundle_C * bb = init_BB_with_sampled_randomization(ac_list->action_list);
+        BackBundle_C * bb = init_BB_with_sampled_randomization(ac_list);
         Raw_Header_C * raw_header = init_raw_header_with_BB(bb);
         print_raw_header(raw_header);
         merge_new_header_with_BB(ac_list, raw_header, bb); //also cleans itself btw
