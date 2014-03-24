@@ -54,8 +54,7 @@ Application::~Application(){
     for (unsigned int i = 0; i < ac_list->header_count; i++) {
         AROLog_Print(logINFO, 1, tag.c_str(), "ts for header %lld\n",ac_list->header_list[i].ts);
         Raw_Header_C * raw_header =ac_list->header_list[i].raw_header;
-        AROLog_Print(logINFO,1,tag.c_str(), "Raw-Header %d %lld %lld -- %c(%p)\n",raw_header->confidence_count + raw_header->outsider_count, raw_header->outsider_[0], raw_header->outsider_[1], ac_list->header_list[i].synced == true? 'Y':'N', ac_list); //there is something wrong with this??
-
+        print_raw_header(raw_header);
         BackBundle_C * bb = ac_list->header_list[i].bb;
         if (bb) {
             for (unsigned int j = 0; j < bb->action_count; j++) {
@@ -367,7 +366,7 @@ void Application::pack_full_bb(){ //pack complete bb
     {
         boost::mutex::scoped_lock lock(mutex);
         AROLog::Log().Print(logINFO, 1, tag.c_str(), "Pack full BB\n");
-        BackBundle_C * bb = init_BB_with_actions(ac_list->action_list, BB_SIZE);
+        BackBundle_C * bb = init_BB_with_sampled_randomization(ac_list->action_list);
         Raw_Header_C * raw_header = init_raw_header_with_BB(bb);
         print_raw_header(raw_header);
         merge_new_header_with_BB(ac_list, raw_header, bb); //also cleans itself btw

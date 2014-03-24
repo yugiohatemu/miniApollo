@@ -24,32 +24,34 @@ typedef struct {
 } __attribute__((aligned(8)))Action_C ;
 
 typedef struct {
-    unsigned int action_count;
+    uint16_t action_count;
     Action_C * action_list;
 }BackBundle_C;
+
     
 typedef struct{
     //modified into
-    uint64_t * confidence_;
-    uint64_t * outsider_;
-    unsigned int confidence_count;
-    unsigned int outsider_count;
-    //actually...I could just manually manipulate there
+    uint64_t confidence_low;
+    uint64_t confidence_high;
+    uint64_t * outliers;
+    uint16_t confidence_count;
+    uint16_t outlier_count;
+    uint8_t percent; //actually char is enough
+    //inliers is more useful when trying to calculate hit rate
 }Raw_Header_C;
     
-    
 typedef struct {
-    uint64_t ts; //use this as a way to make header
-    uint32_t hash;//haha, so we also need that to be aligned so that we can let the sync state process
+    uint64_t ts; //use this as a way to make header, just pick a #
+    uint32_t hash;//so we also need that to be aligned so that we can let the sync state process
     Raw_Header_C *raw_header;
     BackBundle_C * bb; //we can just call this actionlist like ActionList_C * bb
     bool synced;
 }__attribute__((aligned(8)))Header_C;
     
 typedef struct{
-    unsigned int action_count;
+    uint16_t action_count;
     Action_C * action_list;
-    unsigned int header_count;
+    uint16_t header_count;
     Header_C * header_list;
 }ActionList_C;
     
@@ -64,7 +66,7 @@ void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb);
 void sync_header_with_self(ActionList_C * ac_list);
 void update_sync_state(ActionList_C * ac_list );
 //BB
-BackBundle_C * init_BB_with_actions(Action_C * actions, unsigned int count);
+BackBundle_C * init_BB_with_sampled_randomization(Action_C * action_list);
 BackBundle_C * get_latest_BB(ActionList_C * ac_list);
 
 //Raw_Header
@@ -72,10 +74,9 @@ Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb);
 Raw_Header_C *copy_raw_header(Raw_Header_C * raw_header);
 void free_raw_header(Raw_Header_C * raw_header);
 void print_raw_header(Raw_Header_C * raw_header);
-//Header_C
-//void update_sync_state(Header_C * header);
+//
 void merge_action_into_header(Header_C * header, uint64_t ts);
-
+//Actually could be replcaed by AciontList_C
     
 #ifdef __cplusplus
 }

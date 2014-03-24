@@ -18,4 +18,5 @@ const unsigned int T_TRY_BB_TIMEOUT = 3;
 const unsigned int T_APP_SYNC_TIMEOUT = 1;
 const unsigned int T_BB_SYNC_TIMEOUT = 2;
 const unsigned int T_HEADER_SYNC_TIMEOUT = 3;
+const float RADOMIZATION = 0.05;
 #endif
