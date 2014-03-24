@@ -13,9 +13,8 @@
 #include <algorithm>
 #include "AROLog.h"
 #include <sstream>
+#include "commonDefines.h"
 
-const unsigned int BULLY_TIME_OUT = 4;
-static int CHEAT = 0;
 
 Peer::Peer(unsigned int pid, std::vector<Peer *> &peer_list):pid(pid), peer_list(peer_list),
     work(io_service), strand(io_service),
@@ -101,11 +100,7 @@ void Peer::get_online(){
 
 void Peer::new_feed(const boost::system::error_code &e){
     if (!online || e == boost::asio::error::operation_aborted) return ;
-    {
-        boost::mutex::scoped_lock lock(mutex);
-        if (CHEAT >= 7) return;
-        CHEAT++;
-    }
+   
     application->add_new_action();
     
     t_new_feed.expires_from_now(boost::posix_time::seconds(rand() % 6 + 5));

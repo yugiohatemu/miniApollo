@@ -10,9 +10,7 @@
 #include <stdlib.h>
 #include "AROUtil_C.h"
 #include "AROLog_C.h"
-
-const int DEFAULT_HEADER_CAPACITY = 10;
-const int DEFAULT_SYNCHORNIZER_CAPATICY = 50;
+#include "commonDefines.h"
 
 bool is_equal(Raw_Header_C * rh1, Raw_Header_C * rh2);
 //bool is_less_than(Raw_Header_C * rh1, Raw_Header_C * rh2);
@@ -222,7 +220,7 @@ void update_sync_state(ActionList_C * ac_list){
     if (!header->synced) {
         Raw_Header_C * current = init_raw_header_with_BB(header->bb);
         if (is_equal(current, header->raw_header)) {
-            AROLog_Print(logERROR, 1, "BB", "Setting flag to synced!!! %p",ac_list);
+//            AROLog_Print(logERROR, 1, "BB", "Setting flag to synced!!! %p",ac_list);
             header->synced = true;
             remove_duplicate_actions(ac_list, header->bb);
         }

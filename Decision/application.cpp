@@ -16,11 +16,6 @@
 #include "AROLog.h"
 #include "AROUtil_C.h"
 
-const unsigned int BB_SIZE = 6;
-const unsigned int T_TRY_BB_TIMEOUT = 3;
-const unsigned int T_APP_SYNC_TIMEOUT = 1;
-const unsigned int T_BB_SYNC_TIMEOUT = 2;
-const unsigned int T_HEADER_SYNC_TIMEOUT = 3;
 
 Application::Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list):
     io_service(io_service),
@@ -233,7 +228,7 @@ void Application::header_processSyncPoint(SyncPoint msgSyncPoint){
             broadcastToPeers(p);
 #endif
 
-        } else  { //current region not empty if (ac_list->header_count > 0)
+        } else if (ac_list->header_count > 0){
             
             int lo = 0, hi = ac_list->header_count - 1;
             binaryReduceRangeWithRange(lo, hi, msgSyncPoint.ts1, msgSyncPoint.ts2,ac_list->header_list[lo].ts, ac_list->header_list[hi].ts, ac_list->header_list[pivot].ts);
@@ -330,7 +325,7 @@ void Application::app_processSyncPoint(SyncPoint msgSyncPoint){
 //                broadcastToPeers(packet);
 //                AROLog::Log().Print(logINFO,1,tag.c_str(),"Responding to global pic with %d-%d %lld-%lld\n",global_pic.id1,global_pic.id2,global_pic.ts1,global_pic.ts2);
 //            }
-        } else {//if (ac_list->action_count > 0) { //current region not empty
+        } else if (ac_list->action_count > 0) { //current region not empty
             
             int lo = 0, hi = ac_list->action_count - 1;
             binaryReduceRangeWithRange(lo, hi, msgSyncPoint.ts1, msgSyncPoint.ts2,ac_list->action_list[lo].ts, ac_list->action_list[hi].ts, ac_list->action_list[pivot].ts);
@@ -379,7 +374,6 @@ void Application::pack_full_bb(){ //pack complete bb
         
         Packet * p = new Packet(HEADER_MERGE_HEADER); p->content->raw_header = copy_raw_header(raw_header);
         strand.dispatch(boost::bind(&Application::broadcastToPeers,this,p));
-//        broadcastToPeers(p);
         
         synchronizer->reset();
         bb_synchronizer->reset();
@@ -420,19 +414,20 @@ void Application::bb_periodicSync(const boost::system::error_code &e){
 
 void Application::bb_mergeAction(uint64_t ts){
     if (ac_list->header_count == 0) return ;
-    boost::mutex::scoped_lock lock(mutex);
+   
     Header_C header = ac_list->header_list[ac_list->header_count-1];
     if(header.synced == true) return;
-//    AROLog::Log().Print(logINFO, 1, tag.c_str(), "Before %c\n", header.synced ? 'Y': 'N');
+    //If so , then do something
+    boost::mutex::scoped_lock lock(mutex);
     merge_action_into_header(&header, ts);
     update_sync_state(ac_list);
-//    AROLog::Log().Print(logINFO, 1, tag.c_str(), "After %c\n", header.synced ? 'Y': 'N');
-//    if (header.synced == true) {
-//        AROLog::Log().Print(logINFO, 1, tag.c_str(), "BB is synced\n");
-//        pause();
-//        remove_duplicate_actions(ac_list, header.bb);
-//        resume();
-//    }
+    
+    if (header.synced == true) {
+        pause();
+        remove_duplicate_actions(ac_list, header.bb);
+        synchronizer->reset();
+        resume();
+    }
 }
 
 

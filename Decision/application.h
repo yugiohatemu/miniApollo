@@ -14,13 +14,14 @@
 #include <boost/thread/mutex.hpp>
 #include <inttypes.h>
 #include <vector>
-
+#include <string.h>
 #include "action_C.h"
+#include "commonDefines.h"
 #include "AROObjectSynchronizer.h"
 #include "AROProtocols.h"
-#include <string.h>
+
+
 class Peer;
-#define SYN_CHEAT 1;
 
 class Application:public AROSyncResponder{
 

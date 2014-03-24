@@ -16,7 +16,7 @@ extern "C" {
 #endif
     
 #include <stdbool.h>
-    
+
 typedef struct {
     uint64_t ts;
     uint32_t hash;
