@@ -18,6 +18,7 @@ bool is_equal(Raw_Header_C * rh1, Raw_Header_C * rh2);
 //bool is_less_than(Raw_Header_C * rh1, Raw_Header_C * rh2);
 void free_BB(BackBundle_C * bb);
 BackBundle_C * init_empty_BB();
+void print_raw_header(Raw_Header_C * raw_header);
 #pragma mark - Action List
 ActionList_C* init_default_actionList(){
     ActionList_C * ac_list = (ActionList_C*) malloc(sizeof(ActionList_C));
@@ -47,7 +48,7 @@ void free_actionList(ActionList_C* ac_list){
     //Free header_list
     if (ac_list->header_list) {
         for (unsigned int i = 0; i < ac_list->header_count; i++) {
-            if (ac_list->header_list[i].raw_header) free(ac_list->header_list[i].raw_header);
+            if (ac_list->header_list[i].raw_header) free_raw_header(ac_list->header_list[i].raw_header);
             if (ac_list->header_list[i].bb) free_BB(ac_list->header_list[i].bb);
         }
         free(ac_list->header_list);
@@ -57,6 +58,13 @@ void free_actionList(ActionList_C* ac_list){
     
 }
 
+void free_raw_header(Raw_Header_C * raw_header){
+    if (!raw_header) return;
+    
+    if(raw_header->confidence_) free(raw_header->confidence_);
+    if (raw_header->outsider_) free(raw_header->outsider_);
+    free(raw_header);
+}
 
 void merge_new_action(ActionList_C * ac_list, uint64_t ts){
     if (!ac_list ) {
@@ -125,7 +133,8 @@ void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header){
         
         ac_list->header_count++;
         
-        AROLog_Print(logINFO, 1, "", "Header get merged\n");
+        AROLog_Print(logINFO, 1, "", "Header get merged with capacity %d\n",raw_header->confidence_count + raw_header->outsider_count);
+//        print_raw_header(raw_header);
     }
     
 }
@@ -167,12 +176,18 @@ void merge_new_header_with_BB(ActionList_C * ac_list, Raw_Header_C *raw_header, 
 
 bool is_header_section_synced(ActionList_C * ac_list){
     if (ac_list->header_count == 0) return true;
-    return ac_list->header_list[ac_list->header_count-1].synced;
+    if (ac_list->header_list[ac_list->header_count-1].synced == true) {
+        return true;
+    }else
+        return false;
+   
 }
 
 void merge_action_into_header(Header_C * header, uint64_t ts){
+    if (header->synced == true) return ;
+    
     BackBundle_C * bb = header->bb;
-    if (!bb) AROLog_Print(logERROR, 1, "", "Merge action into unexisted BB");
+    if (!bb){ AROLog_Print(logERROR, 1, "", "Merge action into unexisted BB"); return;}
     
     int lo = 0; int hi =  bb->action_count - 1;
     binaryReduceRangeWithKey(lo,hi,ts,bb->action_list[lo].ts,bb->action_list[hi].ts,bb->action_list[pivot].ts);
@@ -187,8 +202,9 @@ void merge_action_into_header(Header_C * header, uint64_t ts){
         }
         bb->action_list[lo].ts = ts;
         bb->action_list[lo].hash = 0;
-        
         bb->action_count++;
+        
+//        AROLog_Print(logINFO, 1, "", "Action %lld merge into BB\n",ts);
     }
 }
 
@@ -199,6 +215,19 @@ bool is_action_in_active_region(ActionList_C * ac_list, uint64_t ts){
     return (lo<=hi);
 }
 
+void update_sync_state(ActionList_C * ac_list){
+    if (ac_list->header_count == 0) return ;
+
+    Header_C *header = &(ac_list->header_list[ac_list->header_count-1]);
+    if (!header->synced) {
+        Raw_Header_C * current = init_raw_header_with_BB(header->bb);
+        if (is_equal(current, header->raw_header)) {
+            AROLog_Print(logERROR, 1, "BB", "Setting flag to synced!!! %p",ac_list);
+            header->synced = true;
+            remove_duplicate_actions(ac_list, header->bb);
+        }
+    }
+}
 #pragma mark - BackBundle
 
 BackBundle_C * init_empty_BB(){
@@ -245,6 +274,7 @@ void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb){
         if (lo <= hi){ ac_list->action_list[lo].ts = 0;  ac_list->action_list[lo].hash = 0;}
     }
     
+    
     //Shift actions to fill in space
     int current = 0; int prev = 0;
     while (current < ac_list->action_count) {
@@ -257,16 +287,30 @@ void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb){
         }
         current++;
     }
-    //update real count
-    AROLog_Print(logDEBUG, 1, "", "Action count %d vs bb count %d\n", ac_list->action_count, bb->action_count);
-    ac_list->action_count -= bb->action_count;
-    AROLog_Print(logDEBUG, 1, "", "Action is reduced to %d\n", ac_list->action_count);
+
+    ac_list->action_count = prev;
+    AROLog_Print(logINFO, 1, "", "Action %d vs BB %d\n", ac_list->action_count,bb->action_count);
 }
 
 #pragma mark - Raw Header
+void print_raw_header(Raw_Header_C * raw_header){
+    if (!raw_header) {
+        AROLog_Print(logERROR, 1, "", "Raw Header Empty\n");
+        return;
+    }
+    
+    AROLog_Print(logINFO, 1, "", "Conf %d, Outsider %d\n",raw_header->confidence_count,raw_header->outsider_count );
+    for (unsigned int i = 0 ; i < raw_header->confidence_count; i++) {
+        AROLog_Print(logINFO, 1, "", "%d - %lld\n", i, raw_header->confidence_[i]);
+    }
+    for (unsigned int i = 0 ; i < raw_header->outsider_count; i++) {
+        AROLog_Print(logINFO, 1, "", "%d - %lld\n", i, raw_header->outsider_[i]);
+    }
+}
+
 Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb){
     if (!bb || bb->action_count <= 3) {
-        AROLog_Print(logERROR, 1, "", "Create Header with empty BB\n");
+        AROLog_Print(logERROR, 1, "", "Create Header with empty or not larger enough BB\n");
         return NULL;
     }
 
@@ -281,30 +325,35 @@ Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb){
     header->outsider_[0] = bb->action_list[0].ts;
     header->outsider_[1] = bb->action_list[bb->action_count - 1].ts;
     
+//    print_raw_header(header);
     return header;
 }
 
 Raw_Header_C *copy_raw_header(Raw_Header_C * raw_header){
     if (!raw_header) return NULL;
     Raw_Header_C * copy = (Raw_Header_C *) malloc(sizeof(Raw_Header_C));
-    copy->confidence_count = raw_header->confidence_count - 2;
+    
+    copy->confidence_count = raw_header->confidence_count;
     copy->confidence_ = (uint64_t *) malloc(sizeof(uint64_t) * copy->confidence_count);
     for (unsigned int i = 0; i < copy->confidence_count; i++) {
         copy->confidence_[i] = raw_header->confidence_[i];
     }
     
-    copy->outsider_count = raw_header->confidence_count;
-    copy->outsider_ = (uint64_t *) malloc(sizeof(uint64_t) * copy->outsider_count);
+    copy->outsider_count = raw_header->outsider_count;
+    copy->outsider_ = (uint64_t *) malloc(sizeof(uint64_t) * raw_header->outsider_count);
     for (unsigned int i = 0; i < copy->outsider_count; i++) {
         copy->outsider_[i] = raw_header->outsider_[i];
     }
+    
     return copy;
 }
 
 bool is_equal(Raw_Header_C * rh1, Raw_Header_C * rh2){
     if (!rh1 || !rh2) return false;
     //    AROLog_Print(logINFO, 1, "", "%lld- %lld %d vs %lld-%lld %d\n", rh1->from,rh1->to, rh1->size,rh2->from,rh2->to, rh2->size);
-    if (rh1->confidence_count != rh2->confidence_count || rh1->outsider_count != rh2->outsider_count) return false;
+    if (rh1->confidence_count == rh2->confidence_count && rh1->outsider_count == rh2->outsider_count) return true;
+    else return false;
+#warning cheating equal
     for (unsigned int i = 0; i < rh1->confidence_count; i++) {
         if (rh1->confidence_[i]!= rh2->confidence_[i]) return false;
     }
@@ -323,47 +372,27 @@ bool is_action_likely_in_bb(Raw_Header_C * raw_header, uint64_t ts){
 }
 
 #pragma mark - Header
-
-void update_sync_state(Header_C * header){
-    Raw_Header_C * current_raw_header = init_raw_header_with_BB(header->bb);
-    header->synced =  is_equal(header->raw_header, current_raw_header);
-    AROLog_Print(logDEBUG, 1, "", "--%c--\n", header->synced ? 'Y':'N');
-    if (current_raw_header) free(current_raw_header);
-}
+//
+//void update_sync_state(Header_C * header){
+//    Raw_Header_C * current_raw_header = init_raw_header_with_BB(header->bb);
+//    if (!header->synced) {
+//        header->synced =  is_equal(header->raw_header, current_raw_header);
+//    }
+//    AROLog_Print(logDEBUG, 1, "", "--%c--\n", header->synced ? 'Y':'N');
+//    if (current_raw_header) free(current_raw_header);
+//}
 
 void sync_header_with_self(ActionList_C * ac_list){
     Header_C header = ac_list->header_list[ac_list->header_count-1];
     Raw_Header_C * raw_header = header.raw_header;
-    
+   
     for (unsigned int i = 0; i  < ac_list->action_count; i++) {
         if (is_action_likely_in_bb(raw_header, ac_list->action_list[i].ts)) {
             merge_action_into_header(&header,  ac_list->action_list[i].ts);
         }
     }
     remove_duplicate_actions(ac_list, header.bb);
-    update_sync_state(&header);
+    update_sync_state(ac_list);
     
 }
-
-
-///////////////////////////
-#pragma mark - Unused function?
-bool is_raw_header_in_actionList(ActionList_C * ac_list,  Raw_Header_C * raw_header){
-    for ( int i = ac_list->header_count - 1; i >= 0; i--) {
-        //        if (is_equal(raw_header, ac_list->header_list[i].raw_header)) return true;
-    }
-    return false;
-}
-
-
-
-bool is_action_in_BB(BackBundle_C * bb, uint64_t ts){
-    for (unsigned int i = 0; i < bb->action_count; i++) {
-        if (bb->action_list[i].ts == ts){
-            return true;
-        }
-    }
-    return false;
-}
-
 

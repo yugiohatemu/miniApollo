@@ -48,6 +48,7 @@ public:
     void start_bully(const boost::system::error_code &e);
     void stop_bully();
     void get_online();
+    void get_offline();
 private:
     template <typename TFunc>
     void execute(TFunc func){
@@ -78,8 +79,6 @@ private:
     void new_feed(const boost::system::error_code &e);
     void read_feed();
     
-    
-    void get_offline();
     bool online;
     
     void get_bullyed(Message m);
