@@ -88,7 +88,9 @@ class Application:public AROSyncResponder{
     ActionList_C * ac_list;
     std::vector<Peer *> &peer_list; //connection_pool in fact
     boost::mutex mutex;
-    
+    AROObjectSynchronizer * header_syncrhonizer;
+    AROObjectSynchronizer * synchronizer;
+    AROObjectSynchronizer * bb_synchronizer;
 //    State state;
     std::string tag;
     ////////////////////////////////////////////////////////////////////////////////
@@ -119,10 +121,6 @@ public:
     Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list);
     ~Application();
    
-    AROObjectSynchronizer * header_syncrhonizer;
-    AROObjectSynchronizer * synchronizer;
-    AROObjectSynchronizer * bb_synchronizer;
-
     ActionList_C * get_actionList();
     void pause();
     void resume();

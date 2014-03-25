@@ -13,7 +13,7 @@
 #include <boost/bind/protect.hpp>
 #include <sstream>
 
-#include "AROLog.h"
+#include "AROLogInterface.h"
 #include "AROUtil_C.h"
 
 
@@ -30,36 +30,41 @@ Application::Application(boost::asio::io_service &io_service, boost::asio::io_se
     
     ac_list = init_default_actionList();
     //Setting up tags and syncrhonizer
-    std::stringstream ss; ss<<"AC# "<<pid; tag = ss.str();
+    std::stringstream ss; ss<<"AC#"<<pid; tag = ss.str();
     
-    ss.clear(); ss<<"H-SYNC# "<<pid; std::string sync_h_tag = ss.str();
+    ss.clear(); ss<<"H-SYNC#"<<pid; std::string sync_h_tag = ss.str();
     header_syncrhonizer = new AROObjectSynchronizer(NULL,NULL,0,this);
     header_syncrhonizer->setDebugInfo(0, sync_h_tag.c_str());
     
-    ss.clear(); ss<<"SYNC# "<<pid; std::string sync_tag = ss.str();
+    ss.clear(); ss<<"SYNC#"<<pid; std::string sync_tag = ss.str();
     synchronizer = new AROObjectSynchronizer(NULL,NULL,  0 ,this); //
     synchronizer->setDebugInfo(0, sync_tag.c_str());
     
-    ss.clear(); ss<<"BB-SYNC# "<<pid; std::string sync_bb_tag = ss.str();
+    ss.clear(); ss<<"BB-SYNC#"<<pid; std::string sync_bb_tag = ss.str();
     bb_synchronizer = new AROObjectSynchronizer(NULL,NULL, 0, this);
     bb_synchronizer->setDebugInfo(0, sync_bb_tag.c_str());
 #ifdef SYN_CHEAT
-    AROLog::Log().Print(logINFO, 1, tag.c_str(),"CHEAT synchronizer for base case.\n");
+   AROLog(logINFO, 1, tag.c_str(),"CHEAT synchronizer for base case.\n");
 #endif
     
 }
 
 Application::~Application(){
-//    AROLog_Print(logINFO, 1, tag.c_str(), "Header %d\n", ac_list->header_count);
+    AROLog_Print(logINFO, 1, tag.c_str(), "Header %d\n", ac_list->header_count);
+    BackBundle_C * bb = get_latest_BB(ac_list);
+    if (bb) {
+        AROLog_Print(logINFO, 1,tag.c_str() ,"BB size %d\n", bb->action_count);
+        for (unsigned int j = 0; j < bb->action_count; j++) {
+            AROLog_Print(logINFO, 1, tag.c_str(), "BB %d - %lld\n",j,bb->action_list[j].ts);
+        }
+    }
+    
 //    for (unsigned int i = 0; i < ac_list->header_count; i++) {
 //        AROLog_Print(logINFO, 1, tag.c_str(), "ts for header %lld\n",ac_list->header_list[i].ts);
 //        Raw_Header_C * raw_header =ac_list->header_list[i].raw_header;
 //        print_raw_header(raw_header);
 //        BackBundle_C * bb = ac_list->header_list[i].bb;
 //        if (bb) {
-//            for (unsigned int j = 0; j < bb->action_count; j++) {
-//                AROLog_Print(logINFO, 1, tag.c_str(), "BB %d - %lld\n",j,bb->action_list[j].ts);
-//            }
 //        }
 //    }
 //    AROLog_Print(logINFO, 1, tag.c_str(), "App Region\n");
@@ -89,6 +94,7 @@ void Application::pause(){
 void Application::resume(){
     header_syncrhonizer->setNetworkPeriod(0.5);
     strand.dispatch(boost::bind(&Application::header_periodicSync,this,error));
+    bb_resume();
 }
 
 void Application::broadcastToPeers(Packet *packet){
@@ -141,7 +147,7 @@ void Application::processMessage(Packet *p){
 
 void Application::add_new_action(){
     uint64_t ts = AOc_localTimestamp();
-    AROLog::Log().Print(logINFO, 1, tag.c_str(),"New action %lld created\n", ts);
+   AROLog(logINFO, 1, tag.c_str(),"New action %lld created\n", ts);
     strand.dispatch(boost::bind(&Application::app_mergeAction, this, ts));
 }
 
@@ -153,9 +159,11 @@ void Application::sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *s
         broadcastToPeers(p);
     }else if (sender == synchronizer) {
         Packet * p = new Packet(APP_PROCESS_SP); p->content->sync_point = *syncPoint;
+        AROLog_Print(logDEBUG, 1, tag.c_str(), "App Request %d - %d, %lld - %lld\n",syncPoint->id1, syncPoint->id2, syncPoint->ts1, syncPoint->ts2);
         broadcastToPeers(p);
     }else if(sender == bb_synchronizer){
         Packet * p = new Packet(BB_PROCESS_SP); p->content->sync_point = *syncPoint;
+        AROLog_Print(logDEBUG, 1, tag.c_str(), "BB Request %d - %d, %lld - %lld\n",syncPoint->id1, syncPoint->id2, syncPoint->ts1, syncPoint->ts2);
         broadcastToPeers(p);
     }
 }
@@ -165,20 +173,19 @@ void Application::notificationOfSyncAchieved(double networkPeriod, int code, voi
     if (networkPeriod < 60) networkPeriod *= 1.5;
     
     if (sender == header_syncrhonizer) {
-        if (is_header_fully_synced()) {
-            AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "Header Sync achieved at %llf\n", networkPeriod);
-            app_resume();
-        }else{
-            t_app_sync.cancel();
-            
-        }
-        bb_resume();
+//        if (is_header_fully_synced()) {
+//           AROLog(logDEBUG, 1, tag.c_str(), "Header Sync achieved at %llf\n", networkPeriod);
+//            app_resume();
+//        }else{
+//            t_app_sync.cancel();
+//        }
         header_syncrhonizer->setNetworkPeriod(networkPeriod);
+//        bb_resume();
     }else if (sender == synchronizer) {
-        AROLog::Log().Print(logDEBUG,1,tag.c_str(),"App Sync achieved at %llf\n", networkPeriod);
+       AROLog(logDEBUG,1,tag.c_str(),"App Sync achieved at %llf\n", networkPeriod);
         synchronizer->setNetworkPeriod(networkPeriod);
     }else if(sender == bb_synchronizer) {
-        AROLog::Log().Print(logINFO,1, tag.c_str(),"BB Sync achieved at %llf\n", networkPeriod);
+       AROLog(logDEBUG,1, tag.c_str(),"BB Sync achieved at %llf\n", networkPeriod);
         bb_synchronizer->setNetworkPeriod(networkPeriod);
     }
 }
@@ -189,7 +196,7 @@ void Application::notificationOfSyncAchieved(double networkPeriod, int code, voi
 void Application::header_periodicSync(const boost::system::error_code &error){
     if ( error == boost::asio::error::operation_aborted) return ;
     
-    AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "H-Periodic sync\n");
+   AROLog(logDEBUG, 1, tag.c_str(), "H-Periodic sync\n");
     
     header_syncrhonizer->processSyncState(&ac_list->header_list[0].ts, &ac_list->header_list[0].hash, sizeof(Header_C) / sizeof(uint64_t), ac_list->header_count);
     
@@ -199,13 +206,8 @@ void Application::header_periodicSync(const boost::system::error_code &error){
 
 #ifdef SYN_CHEAT
 void Application::header_processCount(unsigned int header_count){
-//    if(header_count == ac_list->header_count){
-    
-    strand.dispatch(boost::bind(&Application::notificationOfSyncAchieved,this,header_syncrhonizer->getNetworkPeriod(), 0, header_syncrhonizer));
-//    notificationOfSyncAchieved();
-//    }else{
-//        notificationOfSyncAchieved(header_syncrhonizer->getNetworkPeriod(), 0, header_syncrhonizer);
-//    }
+   strand.dispatch(boost::bind(&Application::notificationOfSyncAchieved,this,header_syncrhonizer->getNetworkPeriod(), 0, header_syncrhonizer));
+
 }
 #endif
 
@@ -220,7 +222,7 @@ void Application::header_processSyncPoint(SyncPoint msgSyncPoint){
                 global_pic.ts1 = ac_list->header_list[0].ts;global_pic.ts2 = ac_list->header_list[ac_list->header_count-1].ts;
                 global_pic.hash = 0; global_pic.res = ac_list->header_count;
                 
-                AROLog::Log().Print(logINFO,1,tag.c_str(),"Responding to global pic with %d-%d %lld-%lld\n",global_pic.id1,global_pic.id2,global_pic.ts1,global_pic.ts2);
+               AROLog(logINFO,1,tag.c_str(),"Responding to global pic with %d-%d %lld-%lld\n",global_pic.id1,global_pic.id2,global_pic.ts1,global_pic.ts2);
                 
                 Packet * p = new Packet(HEADER_PROCESS_SP); p->content->sync_point = global_pic;
                 broadcastToPeers(p);
@@ -245,7 +247,7 @@ void Application::header_processSyncPoint(SyncPoint msgSyncPoint){
         }
     }else {
         //id1, id2, ts1, ts2
-        AROLog::Log().Print(logDEBUG,1,tag.c_str(),"Notify of sync point %d-%d %lld-%lld\n",msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
+       AROLog(logDEBUG,1,tag.c_str(),"Notify of sync point %d-%d %lld-%lld\n",msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
         
         header_syncrhonizer->notifyOfSyncPoint(&msgSyncPoint);
     }
@@ -254,7 +256,7 @@ void Application::header_processSyncPoint(SyncPoint msgSyncPoint){
 
 void Application::header_mergeHeader(Raw_Header_C *raw_header){
     pause();
-    AROLog::Log().Print(logINFO, 1, tag.c_str(), "Sync Self with header\n");
+   AROLog(logINFO, 1, tag.c_str(), "Sync Self with header\n");
     {
         boost::mutex::scoped_lock lock(mutex);
         merge_new_header(ac_list, raw_header);
@@ -296,7 +298,7 @@ void Application::app_mergeAction(uint64_t ts){ //the content of action
 void Application::app_periodicSync(const boost::system::error_code &error){
     if ( error == boost::asio::error::operation_aborted) return ;
     
-    AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "Periodic sync\n");
+   AROLog(logDEBUG, 1, tag.c_str(), "Periodic sync\n");
     synchronizer->processSyncState(&ac_list->action_list[0].ts, &ac_list->action_list[0].hash, sizeof(Action_C) / sizeof(uint64_t), ac_list->action_count);
     
     t_app_sync.expires_from_now(boost::posix_time::seconds(T_APP_SYNC_TIMEOUT));
@@ -304,6 +306,7 @@ void Application::app_periodicSync(const boost::system::error_code &error){
 }
 
 void Application::app_processSyncPoint(SyncPoint msgSyncPoint){
+    
     
     if ((msgSyncPoint.id1 == 0) && (msgSyncPoint.id2 == 0)) {
         
@@ -315,7 +318,7 @@ void Application::app_processSyncPoint(SyncPoint msgSyncPoint){
                 global_pic.ts1 = ac_list->action_list[0].ts;global_pic.ts2 = ac_list->action_list[ac_list->action_count-1].ts;
                 global_pic.hash = 0; global_pic.res = ac_list->action_count;
                 
-                AROLog::Log().Print(logINFO,1,tag.c_str(),"Responding to global pic with %d-%d %lld-%lld\n",global_pic.id1,global_pic.id2,global_pic.ts1,global_pic.ts2);
+               AROLog(logINFO,1,tag.c_str(),"App Responding to global pic with %d-%d %lld-%lld\n",global_pic.id1,global_pic.id2,global_pic.ts1,global_pic.ts2);
                 
                 Packet *p = new Packet( APP_PROCESS_SP); p->content->sync_point = global_pic;
                 broadcastToPeers(p);
@@ -324,6 +327,7 @@ void Application::app_processSyncPoint(SyncPoint msgSyncPoint){
             
             int lo = 0, hi = ac_list->action_count - 1;
             binaryReduceRangeWithRange(lo, hi, msgSyncPoint.ts1, msgSyncPoint.ts2,ac_list->action_list[lo].ts, ac_list->action_list[hi].ts, ac_list->action_list[pivot].ts);
+                  AROLog_Print(logINFO, 1, tag.c_str(), "lo %d - hi %d syncPoint in Sync: %d-%d %lld-%lld\n", lo,hi,msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
             for (; lo <= hi; lo++) {
                 Packet *p = new Packet(APP_MERGE_ACTION); p->content->ts = ac_list->action_list[lo].ts;
                 broadcastToPeers(p);
@@ -331,7 +335,7 @@ void Application::app_processSyncPoint(SyncPoint msgSyncPoint){
         }
     }else {
         //id1, id2, ts1, ts2
-        AROLog::Log().Print(logDEBUG,1,tag.c_str(),"Notify of sync point %d-%d %lld-%lld\n",msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
+       AROLog(logINFO,1,tag.c_str(),"Notify of sync point %d-%d %lld-%lld\n",msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
         synchronizer->notifyOfSyncPoint(&msgSyncPoint);
     }
 }
@@ -342,7 +346,7 @@ void Application::try_bb(boost::system::error_code e){ //try bb
     if(e == boost::asio::error::operation_aborted ) return;
    
     if (is_header_fully_synced() && ac_list->action_count > BB_SIZE) {
-        AROLog::Log().Print(logINFO, 1, tag.c_str(), "Try BB\n");
+       AROLog(logINFO, 1, tag.c_str(), "Try BB\n");
         strand.dispatch(boost::bind(&Peer::start_bully, peer_list[pid], error));
     }else{
         t_try_bb.expires_from_now(boost::posix_time::seconds(T_TRY_BB_TIMEOUT));
@@ -361,7 +365,7 @@ void Application::pack_full_bb(){ //pack complete bb
     pause();
     {
         boost::mutex::scoped_lock lock(mutex);
-        AROLog::Log().Print(logINFO, 1, tag.c_str(), "Pack full BB\n");
+       AROLog(logINFO, 1, tag.c_str(), "Pack full BB\n");
         BackBundle_C * bb = init_BB_with_sampled_randomization(ac_list);
         Raw_Header_C * raw_header = init_raw_header_with_BB(bb);
         print_raw_header(raw_header);
@@ -383,10 +387,10 @@ void Application::pack_full_bb(){ //pack complete bb
 void Application::bb_resume(){
     BackBundle_C * bb =  get_latest_BB(ac_list);
     if (!bb) return;
-    
+   
     if (t_bb_sync.expires_from_now(boost::posix_time::seconds(T_BB_SYNC_TIMEOUT))<= 0) {
         AROLog_Print(logINFO, 1, tag.c_str(), "------BB_RESUME-------\n");
-//        bb_synchronizer->setNetworkPeriod(0.5);
+        bb_synchronizer->setNetworkPeriod(0.5);
         strand.dispatch(boost::bind(&Application::bb_periodicSync,this,error));
     }
 }
@@ -400,7 +404,7 @@ void Application::bb_periodicSync(const boost::system::error_code &e){
     
     BackBundle_C * bb = get_latest_BB(ac_list);
     if (!bb) return;
-    AROLog::Log().Print(logDEBUG, 1, tag.c_str(), "BB-Periodic sync\n");
+   AROLog(logDEBUG, 1, tag.c_str(), "BB-Periodic sync\n");
     bb_synchronizer->processSyncState(&bb->action_list[0].ts, &bb->action_list[0].hash, sizeof(Action_C) / sizeof(uint64_t), bb->action_count);
     
     t_bb_sync.expires_from_now(boost::posix_time::seconds(T_BB_SYNC_TIMEOUT));
@@ -425,11 +429,12 @@ void Application::bb_mergeAction(uint64_t ts){
     }
 }
 
-
 void Application::bb_processSyncPoint(SyncPoint msgSyncPoint){
-    BackBundle_C * bb  = get_latest_BB(ac_list);
-    if (!bb) return ;
+    Header_C * header = get_latest_header(ac_list);
+   
     
+    if (!header) return ;
+    BackBundle_C * bb  = header->bb;
     if ((msgSyncPoint.id1 == 0) && (msgSyncPoint.id2 == 0)) {
         
         if ((msgSyncPoint.ts1 == 0ll) && (msgSyncPoint.ts2 == 0ll)) { //0,0,0,0 global picture
@@ -440,26 +445,57 @@ void Application::bb_processSyncPoint(SyncPoint msgSyncPoint){
                 global_pic.ts1 = bb->action_list[0].ts;global_pic.ts2 = bb->action_list[bb->action_count-1].ts;
                 global_pic.hash = 0; global_pic.res = bb->action_count;
                 
-                AROLog::Log().Print(logINFO,1,tag.c_str(),"BB to global pic with %d-%d %lld-%lld\n",global_pic.id1,global_pic.id2,global_pic.ts1,global_pic.ts2);
+               AROLog(logINFO,1,tag.c_str(),"BB to global pic with %d-%d %lld-%lld\n",global_pic.id1,global_pic.id2,global_pic.ts1,global_pic.ts2);
                 Packet *p = new Packet( BB_PROCESS_SP); p->content->sync_point = global_pic;
                 strand.dispatch(boost::bind(&Application::broadcastToPeers,this,p));
-//                broadcastToPeers(p);
             }
             
         } else { //current region not empty 
             //BB_MERGE_ACTION
+           
             int lo = 0, hi = bb->action_count - 1;
             binaryReduceRangeWithRange(lo, hi, msgSyncPoint.ts1, msgSyncPoint.ts2,bb->action_list[lo].ts, bb->action_list[hi].ts, bb->action_list[pivot].ts);
-            for (; lo <= hi; lo++) {
-                Packet *p = new Packet(BB_MERGE_ACTION); p->content->ts = bb->action_list[lo].ts;
-//                broadcastToPeers(p);
-                strand.dispatch(boost::bind(&Application::broadcastToPeers,this,p));
-            }
+            //wait, we can also search for that in synchronizer to see if thats matching?
+            
+            AROLog_Print(logINFO, 1, tag.c_str(), "lo %d - hi %d syncPoint in BB: %d-%d %lld-%lld\n", lo,hi,msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
+           //TODO: will this situation ever happens?
+//            for (; lo <= hi; lo++) {
+//                Packet *p = new Packet(BB_MERGE_ACTION); p->content->ts = bb->action_list[lo].ts;
+//                strand.dispatch(boost::bind(&Application::broadcastToPeers,this,p));
+//            }
         }
     }else {
         //id1, id2, ts1, ts2
-        AROLog::Log().Print(logDEBUG,1,tag.c_str(),"Notify of sync point in BB %d-%d %lld-%lld\n",msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
-        bb_synchronizer->notifyOfSyncPoint(&msgSyncPoint);
+       AROLog(logINFO,1,tag.c_str(),"Notify of sync point in BB %d-%d %lld-%lld\n",msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
+        if(!header->synced){
+            int lo = 0, hi = bb->action_count - 1;
+            binaryReduceRangeWithRange(lo, hi, msgSyncPoint.ts1, msgSyncPoint.ts2,bb->action_list[lo].ts, bb->action_list[hi].ts, bb->action_list[pivot].ts);
+            if (hi - lo == msgSyncPoint.id2 - msgSyncPoint.id1) {
+                AROLog_Print(logDEBUG, 1, "AAA", "Already loaded in BB\n");
+            }else{
+                lo = 0, hi = ac_list->action_count - 1;
+                if (msgSyncPoint.id2 <= ac_list->action_count) {
+                    binaryReduceRangeWithRange(lo, hi, msgSyncPoint.ts1, msgSyncPoint.ts2,ac_list->action_list[lo].ts, ac_list->action_list[hi].ts, ac_list->action_list[pivot].ts);
+                    AROLog_Print(logINFO, 1, "AAA", "lo %d- hi %d vs id1 %d -  id2 %d\n", lo, hi, msgSyncPoint.id1,msgSyncPoint.id2);
+                    if (hi - lo == msgSyncPoint.id2 - msgSyncPoint.id1) {
+                        AROLog_Print(logINFO, 1, "AAA", "Found in active region, we merge them into BB!\n");
+                        boost::mutex::scoped_lock lock(mutex);
+                        for (; lo <= hi; lo++){
+                            merge_action_into_header(header, ac_list->action_list[lo].ts);
+                        }
+                        update_sync_state(ac_list); //should be on header?
+                        AROLog_Print(logINFO, 1, "AAA", "Now we have %d actions and synced: %c\n", bb->action_count, header->synced ? 'Y':'N');
+                    }else {
+                        AROLog_Print(logERROR, 1,"AAA", "Not found in Active\n");
+                        //TODO: this could happen if we are not synced, so the merge action will still happen
+                    }
+                }
+            }
+            
+        }
+        
+        bb_synchronizer->notifyOfSyncPoint(&msgSyncPoint); //TODO:should  notify everytime?
+        
     }
     
 }

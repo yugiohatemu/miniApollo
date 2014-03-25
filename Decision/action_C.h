@@ -77,7 +77,9 @@ Raw_Header_C *copy_raw_header(Raw_Header_C * raw_header);
 void free_raw_header(Raw_Header_C * raw_header);
 void print_raw_header(Raw_Header_C * raw_header);
 //
+Header_C * get_latest_header(ActionList_C * ac_list);
 void merge_action_into_header(Header_C * header, uint64_t ts);
+    
 //Actually could be replcaed by AciontList_C
     
 #ifdef __cplusplus

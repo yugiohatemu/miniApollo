@@ -1,36 +1,41 @@
-//
-//  AROLog.cpp
-//  ApolloPriorityPeer
-//
-//  Created by Henry Ko on 2013-05-23.
-//  Copyright (c) 2013 Arroware. All rights reserved.
-//
-
+#include "AROLogInterface.h"
 #include <cstdio>
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sstream>
+#include <fstream>
 #include <boost/thread.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "AROLog.h"
-//#include "AROUtil_C.h"
-
-#if defined(__ANDROID__)
-#include <android/log.h>
-#endif
-
 boost::mutex log_stream_lock;
 
-AROLog& AROLog::Log()
-{
-    static AROLog m_pInstance;
+void AROLog_Print(int level, int timed, const char *tag, const char *format, ...) {
+#ifndef PRODUCTION
+    va_list args;
+    va_start(args, format);
+    AROLogInterface::Log().vPrint(level, timed, tag, format, args);
+    va_end(args);
+#endif
+}
+
+void AROLogInterface::Print(int level, int timed, const char *tag, const char *format, ...) {
+#ifndef PRODUCTION
+    va_list args;
+    va_start(args, format);
+    vPrint(level,timed,tag,format,args);
+    va_end(args);
+#endif
+}
+
+
+AROLogInterface& AROLogInterface::Log(){
+    static AROLogInterface m_pInstance;
     return m_pInstance;
 }
 
-void AROLog::OpenLog(std::string path, std::string filename) {
+void AROLogInterface::OpenLog(std::string path, std::string filename) {
 #ifndef PRODUCTION
 #if !defined(__ANDROID__)
     std::stringstream timed_filename;
@@ -51,7 +56,7 @@ void AROLog::OpenLog(std::string path, std::string filename) {
 #endif
 }
 
-void AROLog::CloseLog() {
+void AROLogInterface::CloseLog() {
 #ifndef PRODUCTION
 #if !defined(__ANDROID__)
     if (fp) {
@@ -68,12 +73,12 @@ void AROLog::CloseLog() {
 #endif
 }
 
-const std::string AROLog::ToString(int level) {
+const std::string AROLogInterface::ToString(int level) {
     static const char* const buffer[] = {"ERROR ", "WARN  ", "INFO  ", "DEBUG ", "DEBUG1", "DEBUG2", "DEBUG3", "DEBUG4"};
     return buffer[level];
 }
 
-void AROLog::CheckLogDate() {
+void AROLogInterface::CheckLogDate() {
 #if !defined(__ANDROID__)
     std::stringstream timed_filename;
     
@@ -87,16 +92,7 @@ void AROLog::CheckLogDate() {
 #endif
 }
 
-void AROLog::Print(int level, int timed, const char *tag, const char *format, ...) {
-#ifndef PRODUCTION
-    va_list args;
-    va_start(args, format);
-    vPrint(level,timed,tag,format,args);
-    va_end(args);
-#endif
-}
-
-void AROLog::vPrint(int level, int timed, const char *tag, const char *format, va_list args) {
+void AROLogInterface::vPrint(int level, int timed, const char *tag, const char *format, va_list args) {
 #ifndef PRODUCTION
     //va_list args;
     
@@ -157,24 +153,16 @@ void AROLog::vPrint(int level, int timed, const char *tag, const char *format, v
 #endif // !defined(PRODUCTION)
 }
 
-void AROLog_Print(int level, int timed, const char *tag, const char *format, ...) {
-#ifndef PRODUCTION
-    va_list args;
-    va_start(args, format);
-    AROLog::Log().vPrint(level, timed, tag, format, args);
-    va_end(args);
-#endif
-}
 
-void AROLog::SetLogLevel(int level) {
+void AROLogInterface::SetLogLevel(int level) {
     current_level = (enum LogLevel)level;
 }
 
-int AROLog::GetLogLevel() {
+int AROLogInterface::GetLogLevel() {
     return current_level;
 }
 
-std::string AROLog::GetDate() {
+std::string AROLogInterface::GetDate() {
     time_t t = time(0);   // get time now
     struct tm * now = localtime( & t );
     char       buf[80];
@@ -183,7 +171,7 @@ std::string AROLog::GetDate() {
     return buf;
 }
 
-std::string AROLog::GetLogFilePrefix() {
+std::string AROLogInterface::GetLogFilePrefix() {
     time_t t = time(0);   // get time now
     struct tm * now = localtime( & t );
     char buf[80];
@@ -192,7 +180,7 @@ std::string AROLog::GetLogFilePrefix() {
     return buf;
 }
 
-std::string AROLog::GetTime() {
+std::string AROLogInterface::GetTime() {
     time_t t = time(0);   // get time now
     struct tm * now = localtime( & t );
     char       buf[80];

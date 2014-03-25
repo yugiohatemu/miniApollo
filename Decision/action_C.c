@@ -9,7 +9,7 @@
 #include "action_C.h"
 #include <stdlib.h>
 #include "AROUtil_C.h"
-#include "AROLog_C.h"
+#include "AROLogInterface.h"
 #include "commonDefines.h"
 #include <math.h>
 
@@ -35,7 +35,7 @@ ActionList_C* init_default_actionList(){
 }
 
 void load_action_from_cache(ActionList_C* ac_list,uint64_t * ts, unsigned int n){
-    AROLog_Print(logINFO, 0, "", "%d %lld-%lld\n",n,ts[0],ts[n-1]);
+    AROLog(logINFO, 0, "", "%d %lld-%lld\n",n,ts[0],ts[n-1]);
     for (unsigned int  i = 0; i < n; i++) {
         ac_list->action_list[i].ts = ts[i];
     }
@@ -70,7 +70,7 @@ void free_raw_header(Raw_Header_C * raw_header){
 
 void merge_new_action(ActionList_C * ac_list, uint64_t ts){
     if (!ac_list ) {
-        AROLog_Print(logERROR, 1, "", "Merge Action ERROR\n");
+        AROLog(logERROR, 1, "", "Merge Action ERROR\n");
         return ;
     }
     int lo = 0; int hi =  ac_list->action_count - 1;
@@ -89,7 +89,7 @@ void merge_new_action(ActionList_C * ac_list, uint64_t ts){
         ac_list->action_list[lo].hash = 0;
         
         ac_list->action_count++;
-        AROLog_Print(logDEBUG, 1, "", "Merge Action %lld\n", ts);
+        AROLog(logDEBUG, 1, "", "Merge Action %lld\n", ts);
     }
 }
 
@@ -99,7 +99,7 @@ void merge_new_action(ActionList_C * ac_list, uint64_t ts){
 void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header){
     //is less or is greater
     if (!ac_list || !raw_header) {
-        AROLog_Print(logERROR, 1, "", "Merge Header ERROR\n");
+        AROLog(logERROR, 1, "", "Merge Header ERROR\n");
         return ;
     }
     
@@ -127,7 +127,7 @@ void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header){
         
         ac_list->header_count++;
         
-//        AROLog_Print(logINFO, 1, "", "Header get merged with capacity %d\n",raw_header->confidence_count + raw_header->outsider_count);
+//        AROLog(logINFO, 1, "", "Header get merged with capacity %d\n",raw_header->confidence_count + raw_header->outsider_count);
 //        print_raw_header(raw_header);
     }
     
@@ -135,11 +135,11 @@ void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header){
 
 void merge_new_header_with_BB(ActionList_C * ac_list, Raw_Header_C *raw_header, BackBundle_C * bb){
     if (!ac_list || !raw_header || !bb) {
-        AROLog_Print(logERROR, 1, "", "Merge BB with Header ERROR\n");
+        AROLog(logERROR, 1, "", "Merge BB with Header ERROR\n");
         return ;
     }
     int lo = 0; int hi =  ac_list->header_count - 1;
-    //TODO:
+  
     uint64_t ts = raw_header->confidence_low;
     binaryReduceRangeWithKey(lo,hi,ts,ac_list->header_list[lo].ts,ac_list->header_list[hi].ts,ac_list->header_list[pivot].ts);
     
@@ -182,7 +182,7 @@ void merge_action_into_header(Header_C * header, uint64_t ts){
     if (header->synced == true) return ;
     
     BackBundle_C * bb = header->bb;
-    if (!bb){ AROLog_Print(logERROR, 1, "", "Merge action into unexisted BB"); return;}
+    if (!bb){ AROLog(logERROR, 1, "", "Merge action into unexisted BB"); return;}
     
     int lo = 0; int hi =  bb->action_count - 1;
     binaryReduceRangeWithKey(lo,hi,ts,bb->action_list[lo].ts,bb->action_list[hi].ts,bb->action_list[pivot].ts);
@@ -246,12 +246,12 @@ BackBundle_C * init_BB_with_sampled_randomization(ActionList_C * ac_list){
     //swaping some of them
     unsigned int random_count = bb->action_count * RADOMIZATION;
     unsigned int left_over = ac_list->action_count - bb->action_count;
-    AROLog_Print(logINFO, 1, "", "BB %d  - Sampled %d\n",random_count, left_over);
+    AROLog(logINFO, 1, "", "BB %d  - Sampled %d\n",random_count, left_over);
 
     for (unsigned int i = 0; i < random_count; i++) {
         unsigned int r1 = random() % bb->action_count;
         unsigned int r2 = (random() % left_over) + BB_SIZE;
-//        AROLog_Print(logINFO, 1, "", "%d %lld - %d %lld\n", r1, ac_list->action_list[r2].ts,r2,bb->action_list[r1].ts);
+//        AROLog(logINFO, 1, "", "%d %lld - %d %lld\n", r1, ac_list->action_list[r2].ts,r2,bb->action_list[r1].ts);
         bb->action_list[r1].ts = ac_list->action_list[r2].ts;
     }
     
@@ -278,6 +278,7 @@ BackBundle_C * get_latest_BB(ActionList_C * ac_list){
     else return ac_list->header_list[ac_list->header_count-1].bb;
 }
 
+
 void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb){
     for (unsigned int i = 0; i < bb->action_count; i++) {
         int lo = 0; int hi =  ac_list->action_count - 1;
@@ -298,21 +299,21 @@ void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb){
     }
 
     ac_list->action_count = prev;
-    AROLog_Print(logINFO, 1, "", "Action %d vs BB %d\n", ac_list->action_count,bb->action_count);
+    AROLog(logINFO, 1, "", "Action %d vs BB %d\n", ac_list->action_count,bb->action_count);
 }
 
 #pragma mark - Raw Header
 void print_raw_header(Raw_Header_C * raw_header){
     if (!raw_header) {
-        AROLog_Print(logERROR, 1, "", "Raw Header Empty\n");
+        AROLog(logERROR, 1, "", "Raw Header Empty\n");
         return;
     }
   
-    AROLog_Print(logINFO, 1, "", "Conf size %d percent %d, %lld - %lld\n",raw_header->percent,raw_header->confidence_count,raw_header->confidence_low, raw_header->confidence_high);
-    AROLog_Print(logINFO, 1, "", "Outlier size %d\n",raw_header->outlier_count);
+    AROLog(logINFO, 1, "", "Conf size %d percent %d, %lld - %lld\n",raw_header->percent,raw_header->confidence_count,raw_header->confidence_low, raw_header->confidence_high);
+    AROLog(logINFO, 1, "", "Outlier size %d\n",raw_header->outlier_count);
     
     for (unsigned int i = 0 ; i < raw_header->outlier_count; i++) {
-        AROLog_Print(logINFO, 1, "", "%d - %lld\n", i, raw_header->outliers[i]);
+        AROLog(logINFO, 1, "", "%d - %lld\n", i, raw_header->outliers[i]);
     }
 }
 
@@ -346,7 +347,7 @@ void set_fence(Raw_Header_C * raw_header,  BackBundle_C  * bb, float percent){
 
 Raw_Header_C *init_raw_header_with_BB(BackBundle_C * bb){
     if (!bb) {
-        AROLog_Print(logERROR, 1, "", "Create Header with empty or not larger enough BB\n");
+        AROLog(logERROR, 1, "", "Create Header with empty or not larger enough BB\n");
         return NULL;
     }
 
@@ -414,8 +415,11 @@ void sync_header_with_self(ActionList_C * ac_list){
             merge_action_into_header(&header,  ac_list->action_list[i].ts);
         }
     }
-    remove_duplicate_actions(ac_list, header.bb);
+   
     update_sync_state(ac_list);
+}
+Header_C * get_latest_header(ActionList_C * ac_list){
+    if (ac_list->header_count == 0) return NULL;
+    else return &ac_list->header_list[ac_list->header_count-1];
     
 }
-
