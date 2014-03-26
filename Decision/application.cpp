@@ -15,8 +15,8 @@
 
 #include "AROLogInterface.h"
 #include "AROUtil_C.h"
-
-
+#include "diff.h"
+#include <algorithm>
 Application::Application(boost::asio::io_service &io_service, boost::asio::io_service::strand &strand,unsigned int pid, std::vector<Peer *> &peer_list):
     io_service(io_service),
     strand(strand),
@@ -56,6 +56,11 @@ Application::~Application(){
         BackBundle_C * bb = header->bb;
         if (bb) {
             AROLog(logINFO, 1,tag.c_str() ,"BB Synced : %c with size %d\n",header->synced? 'Y':'N', bb->action_count);
+            if (header->synced) {
+                Diff::get().get_synced_actions(bb);
+            }else{
+                Diff::get().get_unsynced_actions(bb);
+            }
             for (unsigned int j = 0; j < bb->action_count; j++) {
                 AROLog(logINFO, 1, tag.c_str(), "BB %d - %lld\n",j,bb->action_list[j].ts);
             }
@@ -153,32 +158,39 @@ void Application::sendRequestForSyncPoint(struct SyncPoint_s *syncPoint, void *s
         AROLog(logDEBUG, 1, tag.c_str(), "BB Request %d - %d, %lld - %lld\n",syncPoint->id1, syncPoint->id2, syncPoint->ts1, syncPoint->ts2);
         Header_C * header = get_latest_header(ac_list);
         
-        if(header && !header->synced && syncPoint->id1 != 0 && syncPoint->id2 != 0){
+        if(header && !header->synced){
             BackBundle_C  * bb = header->bb;
             int lo = 0, hi = bb->action_count - 1;
             binaryReduceRangeWithRange(lo, hi, syncPoint->ts1, syncPoint->ts2,bb->action_list[lo].ts, bb->action_list[hi].ts, bb->action_list[pivot].ts);
+            //Check if it is already in BB, avoid overload
             if (hi - lo == syncPoint->id2 - syncPoint->id1) {
                 AROLog(logDEBUG, 1, tag.c_str(), "Already put in BB\n");
-            }else{
+            }else if(syncPoint->id1 == 0 && syncPoint->id2 == 0 && syncPoint->ts1 != syncPoint->ts2){
+                //do nothing, waste of time for actual merge request
+            }else if (syncPoint->id2 <= ac_list->action_count){
                 lo = 0, hi = ac_list->action_count - 1;
+                binaryReduceRangeWithRange(lo, hi, syncPoint->ts1, syncPoint->ts2,ac_list->action_list[lo].ts, ac_list->action_list[hi].ts, ac_list->action_list[pivot].ts);
+                AROLog(logINFO, 1, "SYNC SELF", "lo %d- hi %d vs id1 %d -  id2 %d %lld - %lld\n", lo, hi, syncPoint->id1,syncPoint->id2, syncPoint->ts1, syncPoint->ts2);
                 
-                if (syncPoint->id2 <= ac_list->action_count) {
-                    binaryReduceRangeWithRange(lo, hi, syncPoint->ts1, syncPoint->ts2,ac_list->action_list[lo].ts, ac_list->action_list[hi].ts, ac_list->action_list[pivot].ts);
-                    AROLog(logINFO, 1, tag.c_str(), "lo %d- hi %d vs id1 %d -  id2 %d\n", lo, hi, syncPoint->id1,syncPoint->id2);
-                    if (lo<=hi && hi - lo == syncPoint->id2 - syncPoint->id1) {
-                        
-                        boost::mutex::scoped_lock lock(mutex);
-                        for (; lo <= hi; lo++){
-                            merge_action_into_header(header, ac_list->action_list[lo].ts);
-                        }
-                        update_sync_state(ac_list); //should be on header?
-//                        remove_duplicate_actions(ac_list, bb);
-                        AROLog(logINFO, 1, tag.c_str(), "Merge we have %d actions and synced: %c\n", bb->action_count, header->synced ? 'Y':'N');
-                    }else {
-                        AROLog(logDEBUG, 1,tag.c_str(), "Dismatch or Not found in Active\n");
-                        //TODO: this could happen if we are not synced, so the merge action will still happen
+                if (lo<=hi && hi - lo == syncPoint->id2 - syncPoint->id1) {
+                    
+                    boost::mutex::scoped_lock lock(mutex);
+                    for (; lo <= hi; lo++){
+                        merge_action_into_header(header, ac_list->action_list[lo].ts);
                     }
+                    update_sync_state(ac_list); //should be on header?
+                    
+                    AROLog(logINFO, 1, "SYNC SELF", "Merge we have %d actions and synced: %c\n", bb->action_count, header->synced ? 'Y':'N');
+                    if(header->synced){
+                        t_bb_sync.cancel();
+                        remove_duplicate_actions(ac_list, bb);
+                        AROLog(logINFO, 1, "SYNC SELF", "BB is fully Synced\n");
+                    }
+                    
+                }else {
+                    AROLog(logDEBUG, 1,tag.c_str(), "Dismatch or Not found in Active\n");
                 }
+                
             }
         }
         broadcastToPeers(p);
@@ -340,11 +352,11 @@ void Application::app_processSyncPoint(SyncPoint msgSyncPoint){
                 Packet *p = new Packet( APP_PROCESS_SP); p->content->sync_point = global_pic;
                 broadcastToPeers(p);
             }
-        } else if (ac_list->action_count > 0) { //current region not empty
+        } else if (ac_list->action_count > 0) { //0, 0, ts1, ts2 request for merge
             
             int lo = 0, hi = ac_list->action_count - 1;
             binaryReduceRangeWithRange(lo, hi, msgSyncPoint.ts1, msgSyncPoint.ts2,ac_list->action_list[lo].ts, ac_list->action_list[hi].ts, ac_list->action_list[pivot].ts);
-                  AROLog(logINFO, 1, tag.c_str(), "lo %d - hi %d syncPoint in Sync: %d-%d %lld-%lld\n", lo,hi,msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
+                  AROLog(logINFO, 1, tag.c_str(), "App Respond lo %d - hi %d syncPoint in Sync: %d-%d %lld-%lld\n", lo,hi,msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
             for (; lo <= hi; lo++) {
                 Packet *p = new Packet(APP_MERGE_ACTION); p->content->ts = ac_list->action_list[lo].ts;
                 broadcastToPeers(p);
@@ -421,7 +433,7 @@ void Application::bb_periodicSync(const boost::system::error_code &e){
     
     BackBundle_C * bb = get_latest_BB(ac_list);
     if (!bb) return;
-   AROLog(logDEBUG, 1, tag.c_str(), "BB-Periodic sync\n");
+    AROLog(logDEBUG, 1, tag.c_str(), "BB-Periodic sync\n");
     bb_synchronizer->processSyncState(&bb->action_list[0].ts, &bb->action_list[0].hash, sizeof(Action_C) / sizeof(uint64_t), bb->action_count);
     
     t_bb_sync.expires_from_now(boost::posix_time::seconds(T_BB_SYNC_TIMEOUT));
@@ -431,18 +443,19 @@ void Application::bb_periodicSync(const boost::system::error_code &e){
 void Application::bb_mergeAction(uint64_t ts){
     if (ac_list->header_count == 0) return ;
    
-    Header_C header = ac_list->header_list[ac_list->header_count-1];
-    if(header.synced == true) return;
+    Header_C  * header = get_latest_header(ac_list);
+    if(header->synced == true) return;
     //If so , then do something
     boost::mutex::scoped_lock lock(mutex);
-    merge_action_into_header(&header, ts);
+    merge_action_into_header(header, ts);
     update_sync_state(ac_list);
-    
-    if (header.synced == true) {
+//    AROLog(logINFO, 1, "Merge", "%lld - total %d\n",ts, header);
+    if (header->synced) {
         pause();
-        remove_duplicate_actions(ac_list, header.bb);
+        remove_duplicate_actions(ac_list, header->bb);
         synchronizer->reset();
-        resume();
+        resume(); //with less network process?
+        AROLog(logINFO, 1, tag.c_str(), "BB SYNCED here\n");
     }
 }
 
@@ -469,17 +482,23 @@ void Application::bb_processSyncPoint(SyncPoint msgSyncPoint){
             
         } else { //current region not empty 
             //BB_MERGE_ACTION
-           
             int lo = 0, hi = bb->action_count - 1;
             binaryReduceRangeWithRange(lo, hi, msgSyncPoint.ts1, msgSyncPoint.ts2,bb->action_list[lo].ts, bb->action_list[hi].ts, bb->action_list[pivot].ts);
             //wait, we can also search for that in synchronizer to see if thats matching?
             
-            AROLog(logDEBUG, 1, tag.c_str(), "lo %d - hi %d syncPoint in BB: %d-%d %lld-%lld\n", lo,hi,msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
-           //TODO: comment back later?
-//            for (; lo <= hi; lo++) {
+//            AROLog(logINFO, 1, tag.c_str(), "Sendout lo %d - hi %d syncPoint to other BB: %d-%d %lld-%lld\n", lo,hi,msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
+           //TODO: Here we force it don't send out the whole context
+//            if(lo == hi){
+                AROLog(logINFO, 1, tag.c_str(), "Sendout lo %d - hi %d syncPoint to other BB: %d-%d %lld-%lld\n", lo,hi,msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);
+//
 //                Packet *p = new Packet(BB_MERGE_ACTION); p->content->ts = bb->action_list[lo].ts;
 //                strand.dispatch(boost::bind(&Application::broadcastToPeers,this,p));
 //            }
+            
+            for (; lo <= hi; lo++) {
+                Packet *p = new Packet(BB_MERGE_ACTION); p->content->ts = bb->action_list[lo].ts;
+                strand.dispatch(boost::bind(&Application::broadcastToPeers,this,p));
+            }
         }
     }else {
         AROLog(logDEBUG,1,tag.c_str(),"Notify of sync point in BB %d-%d %lld-%lld\n",msgSyncPoint.id1,msgSyncPoint.id2,msgSyncPoint.ts1,msgSyncPoint.ts2);

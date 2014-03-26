@@ -216,6 +216,7 @@ void update_sync_state(ActionList_C * ac_list){
     Header_C *header = &(ac_list->header_list[ac_list->header_count-1]);
     if (!header->synced) {
         Raw_Header_C * current = init_raw_header_with_BB(header->bb);
+//        print_raw_header(current);
         if (is_equal(current, header->raw_header))  header->synced = true;
         
     }
@@ -237,7 +238,7 @@ BackBundle_C * init_BB_with_sampled_randomization(ActionList_C * ac_list){
     bb->action_count = BB_SIZE;
     bb->action_list = (Action_C *) malloc(sizeof(Action_C) * bb->action_count);
 
-    //copy the 500 first
+    //copy first
     for (unsigned int i = 0; i < bb->action_count; i++) {
         bb->action_list[i].ts = ac_list->action_list[i].ts;
         bb->action_list[i].hash = ac_list->action_list[i].hash;
@@ -246,7 +247,7 @@ BackBundle_C * init_BB_with_sampled_randomization(ActionList_C * ac_list){
     //swaping some of them
     unsigned int random_count = bb->action_count * RADOMIZATION;
     unsigned int left_over = ac_list->action_count - bb->action_count;
-    AROLog(logINFO, 1, "", "BB %d  - Sampled %d\n",random_count, left_over);
+    AROLog(logINFO, 1, "", "Sampled %d  - %d in range \n",random_count, left_over);
 
     for (unsigned int i = 0; i < random_count; i++) {
         unsigned int r1 = random() % bb->action_count;
@@ -309,7 +310,7 @@ void print_raw_header(Raw_Header_C * raw_header){
         return;
     }
   
-    AROLog(logINFO, 1, "", "Conf size %d percent %d, %lld - %lld\n",raw_header->percent,raw_header->confidence_count,raw_header->confidence_low, raw_header->confidence_high);
+    AROLog(logINFO, 1, "", "Conf range %d with %d%%, %lld - %lld\n",raw_header->confidence_count,raw_header->percent,raw_header->confidence_low, raw_header->confidence_high);
     AROLog(logINFO, 1, "", "Outlier size %d\n",raw_header->outlier_count);
     
     for (unsigned int i = 0 ; i < raw_header->outlier_count; i++) {
@@ -334,7 +335,7 @@ void set_fence(Raw_Header_C * raw_header,  BackBundle_C  * bb, float percent){
 
     uint16_t inner_low_ind = 0;
     uint16_t inner_high_ind = bb->action_count-1;
-
+    
     for (; bb->action_list[inner_low_ind].ts < inner_low && inner_low_ind < bb->action_count; inner_low_ind++) {}
     for (; bb->action_list[inner_high_ind].ts > inner_high && inner_high_ind >= inner_low_ind ; inner_high_ind--) {}
 
@@ -388,7 +389,7 @@ bool is_equal(Raw_Header_C * rh1, Raw_Header_C * rh2){
     if (!rh1 || !rh2) return false;
     
     if (rh1->percent != rh2->percent||rh1->confidence_count != rh2->confidence_count|| rh1->outlier_count != rh2->outlier_count
-        || rh1->confidence_low != rh2->confidence_low || rh1->confidence_high == rh2->confidence_high)return false;
+        || rh1->confidence_low != rh2->confidence_low || rh1->confidence_high != rh2->confidence_high)return false;
     
     for (unsigned int i = 0; i < rh1->outlier_count; i++){
         if (rh1->outliers[i] != rh2->outliers[i]) return false;
