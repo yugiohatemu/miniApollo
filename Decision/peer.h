@@ -12,12 +12,10 @@
 #include "application.h"
 #include <string.h>
 
+struct Packet;
+
 class Peer{
-    struct Message{
-        int p;
-        float weight;
-        Message(int p,float weight):p(p),weight(weight){};
-    };
+   
     enum State{
         NOTHING,
         BULLY_OTHER,
@@ -51,6 +49,10 @@ public:
     void start_bully(const boost::system::error_code &e);
     void stop_bully();
     void test();
+    
+    void broadcastToPeers(Packet *p);
+    void receivePacket(Packet * p);
+    
 private:
     template <typename TFunc>
     void execute(TFunc func){
@@ -64,6 +66,8 @@ private:
     float availability;
     PEER_TYPE peer_type;
     
+    std::queue<Packet *> packet_queue;
+    
     boost::asio::io_service::work work;
 	boost::asio::io_service::strand strand;
     boost::thread_group thread_group;
@@ -73,17 +77,20 @@ private:
     
     boost::asio::deadline_timer t_bully_other;
     boost::asio::deadline_timer t_being_bully;
+    boost::asio::deadline_timer t_queue_delay;
     
     boost::mutex mutex;
     
     void cancel_all();
+    void process_packet_with_delay(boost::system::error_code error);
+    
     
     void new_feed(const boost::system::error_code &e);
     void read_feed();
     
     bool online;
     
-    void get_bullyed(Message m);
+    void get_bullyed(float p_weight);
     void finish_bully(const boost::system::error_code &e);
     
 };

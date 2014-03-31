@@ -257,6 +257,9 @@ BackBundle_C * init_BB_with_sampled_randomization(ActionList_C * ac_list){
     }
     
     qsort(bb->action_list, bb->action_count, sizeof(Action_C), cmpfunc);
+    for (unsigned int i=1; i < bb->action_count; i++) {
+        if (bb->action_list[i-1].ts > bb->action_list[i].ts) AROLog(logERROR, 1, "", "Not sorted in ascending order\n");
+    }
     return bb;
 }
 
@@ -416,7 +419,7 @@ void sync_header_with_self(ActionList_C * ac_list){
             merge_action_into_header(&header,  ac_list->action_list[i].ts);
         }
     }
-   
+    remove_duplicate_actions(ac_list, get_latest_BB(ac_list));
     update_sync_state(ac_list);
 }
 Header_C * get_latest_header(ActionList_C * ac_list){

@@ -14,14 +14,15 @@
 #include "AROLogInterface.h"
 #include <sstream>
 #include "commonDefines.h"
-
+#include "packet.h"
 
 Peer::Peer(unsigned int pid, std::vector<Peer *> &peer_list):pid(pid), peer_list(peer_list),
     work(io_service), strand(io_service),
     t_new_feed(io_service, boost::posix_time::seconds(0)),
     t_on_off_line(io_service, boost::posix_time::seconds(0)),
     t_bully_other(io_service, boost::posix_time::seconds(0)),
-    t_being_bully(io_service, boost::posix_time::seconds(0))
+    t_being_bully(io_service, boost::posix_time::seconds(0)),
+    t_queue_delay(io_service, boost::posix_time::seconds(0))
 {
         //Init timers for that
     std::stringstream ss; ss<<"Peer# "<<pid;
@@ -66,6 +67,7 @@ void Peer::get_online(){
     online = true;
     state = NOTHING;
     application->resume();
+    process_packet_with_delay(error);
     AROLog(logINFO, 1, tag.c_str(), "Get online\n");
     
     if(peer_type != PRIORITY_PEER){
@@ -103,6 +105,37 @@ void Peer::set_peer_type(PEER_TYPE type){
     
 }
 
+void Peer::broadcastToPeers(Packet *packet){
+    
+    for (unsigned int i = 0; i < peer_list.size(); i++) {
+        Packet * p = new Packet(*packet);
+        if (i!=pid && peer_list[i]) peer_list[i]->enqueue(boost::protect(boost::bind(&Peer::receivePacket,peer_list[i],p)));
+    }
+    delete packet;
+}
+
+void Peer::receivePacket(Packet * p){
+    packet_queue.push(p);
+}
+
+void Peer::process_packet_with_delay(boost::system::error_code error){
+    if (!online || error == boost::asio::error::operation_aborted) return ;
+    
+    if (!packet_queue.empty()) {
+        Packet * p = packet_queue.front();
+        packet_queue.pop();
+        if (p->flag == Packet::BULLY_WEIGHT) {
+            strand.post(boost::bind(&Peer::get_bullyed,this, p->content->weight));
+            delete p;
+        }else{
+            strand.post(boost::bind(&Application::processPacket,application,p));
+        }
+        
+    }
+    
+    t_queue_delay.expires_from_now(boost::posix_time::millisec(rand()% 100 + 100));
+    t_queue_delay.async_wait(strand.wrap(boost::bind(&Peer::process_packet_with_delay,this, boost::asio::placeholders::error)));
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark - Base peer function
@@ -133,17 +166,16 @@ void Peer::start_bully(const boost::system::error_code &e){
     state = BULLY_OTHER;
     AROLog(logINFO, 1,tag.c_str(), "Start bully\n");
 //    AROLog(logINFO, 1,tag.c_str(), "Start bully\n");
-    
-    for (unsigned int i = 0; i < peer_list.size(); i++) {
-        if (i != pid) peer_list[i]->enqueue(boost::protect(boost::bind(&Peer::get_bullyed, peer_list[i], Peer::Message(pid, availability))));
-    }
+    Packet * p = new Packet(Packet::BULLY_WEIGHT); p->content->weight = availability;
+    enqueue(boost::protect(boost::bind(&Peer::broadcastToPeers, this, p)));
+   
     
     t_bully_other.expires_from_now(boost::posix_time::seconds(BULLY_TIME_OUT));
     t_bully_other.async_wait(strand.wrap(boost::bind(&Peer::finish_bully,this, boost::asio::placeholders::error)));
 }
 
 
-void Peer::get_bullyed(Peer::Message m){
+void Peer::get_bullyed(float p_weight){
     if (!online) return ;
     
     boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -154,7 +186,7 @@ void Peer::get_bullyed(Peer::Message m){
         for (unsigned int i = 0; i < peer_list.size(); i++) {
             if (pid != i)  peer_list[i]->enqueue(boost::protect(boost::bind(&Peer::stop_bully, peer_list[i])));
         }
-    }else if(m.weight < availability || (m.weight == availability && pid < m.p)){
+    }else if(p_weight < availability || (p_weight == availability && pid < p_weight)){
         state = BULLY_OTHER;
         t_being_bully.cancel(); //might not cancel that
         strand.dispatch(boost::bind(&Peer::start_bully,this,error));
@@ -177,7 +209,6 @@ void Peer::finish_bully(const boost::system::error_code &e){
     strand.dispatch(boost::bind(&Application::pack_full_bb, application));
     strand.dispatch(boost::bind(&Peer::stop_bully,this));
     
- 
     //ask everyone to stop
     for (unsigned int i = 0; i < peer_list.size(); i++) {
         if (pid != i) peer_list[i]->enqueue(boost::protect(boost::bind(&Peer::stop_bully, peer_list[i])));
