@@ -13,11 +13,11 @@ int main( int argc, char * argv[] ){
     AROLogInterface::Log().OpenLog("/Users/yuehuang/Desktop/Decision/Log","linux_client.log");
     AROLogInterface::Log().SetLogLevel(logINFO);
     std::vector<Peer * > peer_list;
-    unsigned int peer_size = 2;
+    unsigned int peer_size = 1;
     for (unsigned int i = 0; i < peer_size; i++) peer_list.push_back(new Peer(i,peer_list));
     peer_list[0]->set_peer_type(Peer::PRIORITY_PEER);
 //    peer_list[2]->set_peer_type(Peer::GOOD_PEER);
-    peer_list[1]->set_peer_type(Peer::PRIORITY_PEER);
+//    peer_list[1]->set_peer_type(Peer::PRIORITY_PEER);
     for (unsigned int i =0; i < peer_size; i++) peer_list[i]->load_cache(pool, POOL_SIZE);
     for (unsigned int i =0; i < peer_size; i++) peer_list[i]->test();
     
@@ -26,7 +26,7 @@ int main( int argc, char * argv[] ){
     
     for (unsigned int i = 0; i < peer_size; i++) delete peer_list[i];
     
-    Diff::get().out_put_diff();
+//    Diff::get().out_put_diff();
     
     AROLogInterface::Log().CloseLog();
     delete [] pool;

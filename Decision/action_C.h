@@ -20,6 +20,7 @@ extern "C" {
 typedef struct {
     uint64_t ts;
     uint32_t hash;
+    int16_t left, right;
     //also a pointer to the header in the future
 } __attribute__((aligned(8)))Action_C ;
 
@@ -53,6 +54,7 @@ typedef struct{
     Action_C * action_list;
     uint16_t header_count;
     Header_C * header_list;
+    uint16_t * action_ref_list;
 }ActionList_C;
     
 //ActionList
@@ -68,7 +70,9 @@ void sync_header_with_self(ActionList_C * ac_list);
 void update_sync_state(ActionList_C * ac_list );
     
 //BB
-BackBundle_C * init_BB_with_sampled_randomization(ActionList_C * ac_list);
+bool is_BB_threshold_met(ActionList_C * ac_list);
+BackBundle_C * init_BB_with_threashold(ActionList_C * ac_list);
+//BackBundle_C * init_BB_with_sampled_randomization(ActionList_C * ac_list);
 BackBundle_C * get_latest_BB(ActionList_C * ac_list);
 void free_BB(BackBundle_C * bb);
 //Raw_Header

@@ -49,6 +49,7 @@ void Peer::load_cache(uint64_t * ts, unsigned int n){ //need at least a uint64* 
 
 void Peer::test(){
     strand.dispatch(boost::bind(&Peer::get_online, this));
+    
     if(pid == 0){
         strand.dispatch(boost::bind(&Application::pack_full_bb, application));
     }

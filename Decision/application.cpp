@@ -396,11 +396,18 @@ void Application::pack_full_bb(){ //pack complete bb
     }
     if (!is_header_fully_synced() || BB_SIZE > ac_list->action_count) return ;
     
+    if(is_BB_threshold_met(ac_list)){
+        AROLog_Print(logINFO, 1, "", "Threshold Met");
+    }else{
+        //TODO: stop and try next time
+        //
+    }
+    
     pause();
     {
         boost::mutex::scoped_lock lock(mutex);
         AROLog(logINFO, 1, tag.c_str(), "Pack full BB\n");
-        BackBundle_C * bb = init_BB_with_sampled_randomization(ac_list);
+        BackBundle_C * bb = init_BB_with_threashold(ac_list);
         Raw_Header_C * raw_header = init_raw_header_with_BB(bb);
         print_raw_header(raw_header);
         merge_new_header_with_BB(ac_list, raw_header, bb); //also cleans itself btw

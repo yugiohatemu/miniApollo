@@ -22,7 +22,8 @@ ActionList_C* init_default_actionList(){
     
     ac_list->action_count = 0;
     ac_list->action_list = (Action_C *) malloc(sizeof(Action_C) * DEFAULT_SYNCHORNIZER_CAPATICY);
-  
+    ac_list->action_ref_list = (uint16_t *) malloc(sizeof(uint16_t) * DEFAULT_SYNCHORNIZER_CAPATICY);
+    
     ac_list->header_count = 0;
     ac_list->header_list = (Header_C *) malloc(sizeof(Header_C) * DEFAULT_HEADER_CAPACITY);
     
@@ -34,20 +35,20 @@ ActionList_C* init_default_actionList(){
     return ac_list;
 }
 
+//In real world we could just load from history, ...so we don't have to recreat it by ourselves
 void load_action_from_cache(ActionList_C* ac_list,uint64_t * ts, unsigned int n){
     AROLog(logINFO, 0, "", "%d %lld-%lld\n",n,ts[0],ts[n-1]);
     for (unsigned int  i = 0; i < n; i++) {
-        ac_list->action_list[i].ts = ts[i];
+        merge_new_action(ac_list, ts[i]);
     }
-    ac_list->action_count = n;
 }
 
 void free_actionList(ActionList_C* ac_list){
     if (!ac_list) return;
     //Free action_list
-    if (ac_list->action_list) {
-        free(ac_list->action_list);
-    }
+    if (ac_list->action_list) free(ac_list->action_list);
+    //Do a threshold check?
+    if (ac_list->action_ref_list) free(ac_list->action_ref_list);
     
     //Free header_list
     if (ac_list->header_list) {
@@ -83,14 +84,27 @@ void merge_new_action(ActionList_C * ac_list, uint64_t ts){
 
                 ac_list->action_list[i].ts = ac_list->action_list[i-1].ts;
                 ac_list->action_list[i].hash = ac_list->action_list[i-1].hash;
+                ac_list->action_ref_list[i] = ac_list->action_ref_list[i-1];
             }
         }
         ac_list->action_list[lo].ts = ts;
         ac_list->action_list[lo].hash = 0;
-        
+        ac_list->action_ref_list[lo] = BB_SIZE;
         ac_list->action_count++;
         AROLog(logDEBUG, 1, "", "Merge Action %lld\n", ts);
+        //TODO: updating chains, needs to be more careful here, actually, for a easy cheat, just +2 to its ancestor
+        //then even if we -1 for all the ones before that, it doesn't matter
+        
+        //for everyone before that, get -1, everyone after that, get+1
+        for (unsigned int i = 0; i < lo; i++) {
+            if (ac_list->action_ref_list[i] > 0) ac_list->action_ref_list[i]--;
+        }
+        for (unsigned int i = lo + 1; i < ac_list->action_count; i++) {
+            ac_list->action_ref_list[i]++;
+        }
+
     }
+    
 }
 
 
@@ -224,6 +238,39 @@ void update_sync_state(ActionList_C * ac_list){
 
 
 #pragma mark - BackBundle
+
+bool is_BB_threshold_met(ActionList_C * ac_list){
+    uint16_t tolerance = BB_SIZE * TOLERANCE_LEVEL;
+    if (ac_list->action_count < 2 * BB_SIZE + tolerance) return false;
+    
+    uint16_t count = 0;
+    for (unsigned int i = 0; i < ac_list->action_count; i++) {
+        if (ac_list->action_ref_list[i] <= tolerance) count++;
+    }
+    
+    return count >= BB_SIZE;
+}
+
+BackBundle_C * init_BB_with_threashold(ActionList_C * ac_list){
+    uint16_t count = 0;
+    uint16_t tolerance = BB_SIZE * TOLERANCE_LEVEL;
+    BackBundle_C * bb = (BackBundle_C *) malloc(sizeof(BackBundle_C));
+    bb->action_count = BB_SIZE;
+    bb->action_list = (Action_C *) malloc(sizeof(Action_C) * bb->action_count);
+    AROLog_Print(logINFO, 1, "", "BB vs Tolerance %d - %d\n", BB_SIZE, tolerance);
+    
+    for (unsigned int i = 0; i < ac_list->action_count; i++) {
+        if (ac_list->action_ref_list[i] <= tolerance) {
+            bb->action_list[count].ts = ac_list->action_list[i].ts;
+            bb->action_list[count].hash = ac_list->action_list[i].hash;
+            count++;
+        }
+        if (count == BB_SIZE) break;
+    }
+    
+    return bb;
+}
+
 int cmpfunc (const void * a, const void * b){
     Action_C * action_a = (Action_C *) a;
     Action_C * action_b = (Action_C *) b;
@@ -296,6 +343,7 @@ void remove_duplicate_actions(ActionList_C * ac_list,BackBundle_C * bb){
             
             ac_list->action_list[prev].ts = ac_list->action_list[current].ts;
             ac_list->action_list[prev].hash = ac_list->action_list[current].hash;
+            ac_list->action_ref_list[prev] = ac_list->action_ref_list[current];
             
             prev++;
         }
