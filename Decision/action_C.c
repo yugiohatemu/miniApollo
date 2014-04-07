@@ -39,8 +39,41 @@ ActionList_C* init_default_actionList(){
 void load_action_from_cache(ActionList_C* ac_list,uint64_t * ts, unsigned int n){
     AROLog(logINFO, 0, "", "%d %lld-%lld\n",n,ts[0],ts[n-1]);
     for (unsigned int  i = 0; i < n; i++) {
-        merge_new_action(ac_list, ts[i]);
+        merge_new_action(ac_list, ts[i],0);
     }
+}
+
+void load_action_from_cache_with_chain(ActionList_C* ac_list,uint64_t * ts_list, unsigned int n){
+    
+    uint16_t make_chain = 100 * 0.15;
+    AROLog(logINFO, 0, "", "%d %lld-%lld with chain probability %d%%\n",n,ts_list[0],ts_list[n-1], make_chain);
+    for (unsigned int i = 0; i < n; i++) {
+        bool chain_flag = ((random() % 100) <= make_chain);
+        //we are going to make the chain
+        if (chain_flag) {
+            uint64_t ref_ts = 0;
+            int64_t next_chain = 0;
+            while (true) {
+                next_chain = random() % ac_list->action_count;
+                if (ac_list->action_list[next_chain].next_ts == 0LL) {
+                    ref_ts = ac_list->action_list[next_chain].ts;
+                    break;
+                }
+            }
+        
+            merge_new_action(ac_list, ts_list[i], ref_ts);
+          
+        }else{ //else just use 0
+            merge_new_action(ac_list, ts_list[i], 0LL);
+        }
+    }
+    
+    //report the reference count
+    for (unsigned int i = 0; i < ac_list->action_count; i++) {
+        AROLog_Print(logINFO, 1, "Ref", "%d - %d %lld - ref %lld \n",
+                     i, ac_list->action_ref_list[i], ac_list->action_list[i].ts, ac_list->action_list[i].ref_ts);
+    }
+    
 }
 
 void free_actionList(ActionList_C* ac_list){
@@ -69,7 +102,7 @@ void free_raw_header(Raw_Header_C * raw_header){
     free(raw_header);
 }
 
-void merge_new_action(ActionList_C * ac_list, uint64_t ts){
+void merge_new_action(ActionList_C * ac_list, uint64_t ts, uint64_t ref_ts){
     if (!ac_list ) {
         AROLog(logERROR, 1, "", "Merge Action ERROR\n");
         return ;
@@ -81,30 +114,45 @@ void merge_new_action(ActionList_C * ac_list, uint64_t ts){
         
         if (lo < ac_list->action_count) {
             for (int i = ac_list->action_count; i > lo; i--) {
-
+                
                 ac_list->action_list[i].ts = ac_list->action_list[i-1].ts;
                 ac_list->action_list[i].hash = ac_list->action_list[i-1].hash;
+                ac_list->action_list[i].ref_ts = ac_list->action_list[i-1].ref_ts;
+                ac_list->action_list[i].next_ts = ac_list->action_list[i-1].next_ts;
+                
                 ac_list->action_ref_list[i] = ac_list->action_ref_list[i-1];
+                
             }
         }
-        ac_list->action_list[lo].ts = ts;
-        ac_list->action_list[lo].hash = 0;
+        ac_list->action_list[lo].ts = ts; ac_list->action_list[lo].hash = 0;
+        ac_list->action_list[lo].ref_ts = ref_ts;  ac_list->action_list[lo].next_ts = 0LL;
         ac_list->action_ref_list[lo] = BB_SIZE;
         ac_list->action_count++;
-        AROLog(logDEBUG, 1, "", "Merge Action %lld\n", ts);
-        //TODO: updating chains, needs to be more careful here, actually, for a easy cheat, just +2 to its ancestor
-        //then even if we -1 for all the ones before that, it doesn't matter
+
+        if (ref_ts != 0LL) {
+            int ref_lo = 0; int ref_hi = ac_list->action_count-1;
+            binaryReduceRangeWithKey(ref_lo, ref_hi, ref_ts, ac_list->action_list[ref_lo].ts,ac_list->action_list[ref_hi].ts,ac_list->action_list[pivot].ts);
+            ac_list->action_list[ref_lo].next_ts = ts;
+        }
+     
+        while (ac_list->action_list[lo].ref_ts != 0LL) {
+            int ref_lo = 0; int ref_hi = ac_list->action_count-1;
+            binaryReduceRangeWithKey(ref_lo, ref_hi, ac_list->action_list[lo].ref_ts, ac_list->action_list[ref_lo].ts,ac_list->action_list[ref_hi].ts,ac_list->action_list[pivot].ts);
+           
+            ac_list->action_ref_list[ref_lo] += 2;
+            lo = ref_lo;
+        }
         
         //for everyone before that, get -1, everyone after that, get+1
         for (unsigned int i = 0; i < lo; i++) {
             if (ac_list->action_ref_list[i] > 0) ac_list->action_ref_list[i]--;
         }
+        //for everyone after that, get + 1, if there is any
         for (unsigned int i = lo + 1; i < ac_list->action_count; i++) {
             ac_list->action_ref_list[i]++;
         }
-
+        
     }
-    
 }
 
 
@@ -207,10 +255,14 @@ void merge_action_into_header(Header_C * header, uint64_t ts){
             for (int i = bb->action_count; i > lo; i--) {
                 bb->action_list[i].ts = bb->action_list[i-1].ts;
                 bb->action_list[i].hash = bb->action_list[i-1].hash;
+                bb->action_list[i].ref_ts = bb->action_list[i-1].ref_ts;
             }
         }
         bb->action_list[lo].ts = ts;
-        bb->action_list[lo].hash = 0;
+        bb->action_list[lo].hash = 0L;
+        
+        bb->action_list[lo].ref_ts = 0LL;
+        
         bb->action_count++;
     }
 }
@@ -223,7 +275,6 @@ bool is_action_in_active_region(ActionList_C * ac_list, uint64_t ts){
 }
 
 
-#warning still need to fix that
 void update_sync_state(ActionList_C * ac_list){
     if (ac_list->header_count == 0) return ;
 

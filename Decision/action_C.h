@@ -20,7 +20,8 @@ extern "C" {
 typedef struct {
     uint64_t ts;
     uint32_t hash;
-    int16_t left, right;
+    uint64_t ref_ts;
+    uint64_t next_ts;
     //also a pointer to the header in the future
 } __attribute__((aligned(8)))Action_C ;
 
@@ -60,8 +61,9 @@ typedef struct{
 //ActionList
 ActionList_C* init_default_actionList();
 void load_action_from_cache(ActionList_C* ac_list,uint64_t * ts, unsigned int n);
+void load_action_from_cache_with_chain(ActionList_C* ac_list,uint64_t * ts_list, unsigned int n);
 void free_actionList(ActionList_C* ac_list);
-void merge_new_action(ActionList_C * ac_list, uint64_t ts);
+void merge_new_action(ActionList_C * ac_list, uint64_t ts, uint64_t ref_ts);
 void merge_new_header(ActionList_C * ac_list, Raw_Header_C *raw_header);
 void merge_new_header_with_BB(ActionList_C * ac_list, Raw_Header_C *raw_header, BackBundle_C * bb);
 bool is_header_section_synced(ActionList_C * ac_list);

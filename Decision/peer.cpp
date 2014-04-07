@@ -44,7 +44,7 @@ Peer::~Peer(){
 
 void Peer::load_cache(uint64_t * ts, unsigned int n){ //need at least a uint64* t & n
     boost::mutex::scoped_lock lock(mutex);
-    load_action_from_cache(application->get_actionList(), ts, n);
+    load_action_from_cache_with_chain(application->get_actionList(), ts, n);
 }
 
 void Peer::test(){

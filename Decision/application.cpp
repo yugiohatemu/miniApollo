@@ -326,7 +326,7 @@ void Application::app_resume(){
 
 void Application::app_mergeAction(uint64_t ts){ //the content of action
     boost::mutex::scoped_lock lock(mutex);
-    merge_new_action(ac_list, ts);
+    merge_new_action(ac_list, ts,0);
 }
 
 void Application::app_periodicSync(const boost::system::error_code &error){
